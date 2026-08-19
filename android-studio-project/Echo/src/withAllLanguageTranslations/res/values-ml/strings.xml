@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">പ്രതിധ്വനി</string>
+  <string name="volume">അളവ്</string>
+  <string name="notification_text">എക്കോ സേവനം പ്രവർത്തിക്കുന്നു.</string>
+  <string name="exit">പുറത്തുകടക്കുക</string>
+</resources>

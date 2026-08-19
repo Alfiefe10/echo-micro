@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">Eko</string>
+  <string name="volume">Volim</string>
+  <string name="notification_text">Sèvis Echo a ap fonksyone.</string>
+  <string name="exit">Sòti</string>
+</resources>

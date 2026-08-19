@@ -1,0 +1,12 @@
+{
+  "name": "@warren-bank/Android-Pipe-Audio-From-Microphone-To-Speaker",
+  "private": true,
+  "license": "GPL-2.0",
+  "devDependencies": {
+    "@warren-bank/translate-android-strings": "^3.0.1"
+  },
+  "scripts": {
+    "translate":       "translate-android-strings -s \"deepl\" -i \"en\" -f \"android-studio-project/Echo/src/main/res/values/strings.xml\" -d \"android-studio-project/Echo/src/withAllLanguageTranslations/res\" -m --na --nc --nw --nr",
+    "translate:debug": "npm run translate -- -o \"en\" --debug"
+  }
+}

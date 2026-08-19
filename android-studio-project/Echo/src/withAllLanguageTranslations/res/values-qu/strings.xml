@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">Kutichiy</string>
+  <string name="volume">Tupun</string>
+  <string name="notification_text">Echo qaranakuy llamk\'ashan.</string>
+  <string name="exit">Lluqsinapaq</string>
+</resources>

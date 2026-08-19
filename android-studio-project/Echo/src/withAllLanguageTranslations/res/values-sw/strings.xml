@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">Mwangwi</string>
+  <string name="volume">Kiasi</string>
+  <string name="notification_text">Huduma ya Echo inaendelea.</string>
+  <string name="exit">Toka</string>
+</resources>

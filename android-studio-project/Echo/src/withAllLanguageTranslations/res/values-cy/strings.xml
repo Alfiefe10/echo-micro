@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">Adlais</string>
+  <string name="volume">Cyfeiriadedd</string>
+  <string name="notification_text">Mae gwasanaeth Echo yn rhedeg.</string>
+  <string name="exit">Allan</string>
+</resources>

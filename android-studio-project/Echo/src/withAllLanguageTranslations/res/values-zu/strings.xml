@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">Impinduzo</string>
+  <string name="volume">Umthamo</string>
+  <string name="notification_text">Inkonzo ye-Echo iyasebenza.</string>
+  <string name="exit">Phuma</string>
+</resources>

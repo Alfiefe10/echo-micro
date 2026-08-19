@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">에코</string>
+  <string name="volume">권</string>
+  <string name="notification_text">Echo 서비스가 실행 중입니다.</string>
+  <string name="exit">종료</string>
+</resources>

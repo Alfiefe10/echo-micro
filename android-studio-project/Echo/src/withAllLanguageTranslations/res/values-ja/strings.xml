@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">エコー</string>
+  <string name="volume">巻数</string>
+  <string name="notification_text">Echoサービスが実行中です.</string>
+  <string name="exit">終了</string>
+</resources>

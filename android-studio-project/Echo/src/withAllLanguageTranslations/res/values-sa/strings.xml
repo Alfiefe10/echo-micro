@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">प्रतिध्वनि</string>
+  <string name="volume">परिमाणम्</string>
+  <string name="notification_text">प्रतिध्वनि सेवा प्रवर्तते।.</string>
+  <string name="exit">निर्गमनम्</string>
+</resources>

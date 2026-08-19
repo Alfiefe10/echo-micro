@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">Echo</string>
+  <string name="volume">Apjoms</string>
+  <string name="notification_text">Pakalpojums „Echo” darbojas.</string>
+  <string name="exit">Iziet</string>
+</resources>

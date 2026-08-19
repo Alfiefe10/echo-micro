@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">گونج</string>
+  <string name="volume">حجم</string>
+  <string name="notification_text">ایکو سروس چل رہی ہے.</string>
+  <string name="exit">نکلنا</string>
+</resources>

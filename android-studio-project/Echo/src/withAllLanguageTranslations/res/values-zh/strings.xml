@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">回声</string>
+  <string name="volume">卷</string>
+  <string name="notification_text">Echo 服务正在运行.</string>
+  <string name="exit">退出</string>
+</resources>

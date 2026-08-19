@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">ਪ੍ਰਤਿਧੁਨੀ</string>
+  <string name="volume">ਮਾਤਰਾ</string>
+  <string name="notification_text">ਐਕੋ ਸੇਵਾ ਚੱਲ ਰਹੀ ਹੈ.</string>
+  <string name="exit">ਬਾਹਰ ਨਿਕਲੋ</string>
+</resources>

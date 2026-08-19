@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">Oihartzuna</string>
+  <string name="volume">Bolumena</string>
+  <string name="notification_text">Echo zerbitzua martxan dago.</string>
+  <string name="exit">Irteera</string>
+</resources>

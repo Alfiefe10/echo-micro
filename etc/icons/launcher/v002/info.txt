@@ -1,0 +1,24 @@
+https://uxwing.com/small-smart-speaker-icon/
+https://uxwing.com/wp-content/themes/uxwing/download/internet-network-technology/small-smart-speaker-icon.svg
+https://uxwing.com/wp-admin/admin-ajax.php?action=resize_image&size=256x256&file=small-smart-speaker-icon.png
+https://uxwing.com/license/
+  License: All icons on this site can be used for personal, commercial, and client projects without attribution.
+
+https://circlecropimage.com/
+  input      = 256x256 png
+  mode       = fit
+  rotate     = 0
+  border     = 3%
+  padding    = 0%
+  background = hsl: 160,240,180
+             = rgb: 128,128,255
+  [output]   = 362x362 png
+
+https://louisem.com/421408/gray-hex-codes
+  gimp w/ bucket fill:
+    speaker  = #b9bbb6 (Rhino Grey)
+    base     = #808588 (Lava  Grey)
+
+https://www.iloveimg.com/resize-image/resize-png
+  input      = 362x362 png
+  output     = 256x256 png

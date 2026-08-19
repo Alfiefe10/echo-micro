@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">Эхо</string>
+  <string name="volume">Эзлэхүүн</string>
+  <string name="notification_text">Echo үйлчилгээ ажиллаж байна.</string>
+  <string name="exit">Гарах</string>
+</resources>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">Eko</string>
+  <string name="volume">Tomo</string>
+  <string name="notification_text">Tumatakbo ang serbisyo ng Echo..</string>
+  <string name="exit">Lumabas</string>
+</resources>

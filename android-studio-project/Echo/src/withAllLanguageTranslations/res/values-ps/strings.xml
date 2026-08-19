@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">انګاز</string>
+  <string name="volume">حجم</string>
+  <string name="notification_text">د اکو خدمت فعال دی.</string>
+  <string name="exit">وتل</string>
+</resources>

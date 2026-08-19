@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">Echo</string>
+  <string name="volume">Objętość</string>
+  <string name="notification_text">Usługa Echo działa.</string>
+  <string name="exit">Wyjście</string>
+</resources>

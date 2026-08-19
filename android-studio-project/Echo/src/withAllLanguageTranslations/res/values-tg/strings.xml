@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">Эхо</string>
+  <string name="volume">Ҳаҷм</string>
+  <string name="notification_text">Хидмати Echo кор мекунад.</string>
+  <string name="exit">Баромадан</string>
+</resources>

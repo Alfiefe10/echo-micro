@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">Whakawhitiwhiti</string>
+  <string name="volume">Rōrahi</string>
+  <string name="notification_text">Kei te rere te ratonga Echo.</string>
+  <string name="exit">Putanga</string>
+</resources>

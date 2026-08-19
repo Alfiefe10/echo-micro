@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">Macalla</string>
+  <string name="volume">Imleabhar</string>
+  <string name="notification_text">Tá seirbhís Echo ag rith.</string>
+  <string name="exit">Scoilt</string>
+</resources>

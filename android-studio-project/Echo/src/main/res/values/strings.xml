@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">Echo</string>
+
+  <string name="volume">Volume</string>
+  <string name="notification_text">Echo service is running.</string>
+  <string name="exit">Exit</string>
+</resources>

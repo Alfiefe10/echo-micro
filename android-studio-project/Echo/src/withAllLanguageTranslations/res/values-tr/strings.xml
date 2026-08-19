@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">Yankı</string>
+  <string name="volume">Hacim</string>
+  <string name="notification_text">Echo hizmeti çalışıyor.</string>
+  <string name="exit">Çıkış</string>
+</resources>

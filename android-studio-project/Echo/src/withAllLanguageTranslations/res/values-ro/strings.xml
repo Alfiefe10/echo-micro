@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">Echo</string>
+  <string name="volume">Volum</string>
+  <string name="notification_text">Serviciul Echo este în funcțiune.</string>
+  <string name="exit">Ieșire</string>
+</resources>

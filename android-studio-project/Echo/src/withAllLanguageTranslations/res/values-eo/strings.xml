@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">Eĥo</string>
+  <string name="volume">Volumo</string>
+  <string name="notification_text">Eĥa servo funkcias.</string>
+  <string name="exit">Eksiri</string>
+</resources>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">Echo</string>
+  <string name="volume">Khối lượng</string>
+  <string name="notification_text">Dịch vụ Echo đang chạy.</string>
+  <string name="exit">Thoát</string>
+</resources>

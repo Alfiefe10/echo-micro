@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">Molodi</string>
+  <string name="volume">Bokana</string>
+  <string name="notification_text">Tirelo ya Echo e a bereka.</string>
+  <string name="exit">Tswa</string>
+</resources>

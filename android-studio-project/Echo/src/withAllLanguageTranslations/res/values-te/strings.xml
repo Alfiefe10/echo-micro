@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">ప్రతిధ్వని</string>
+  <string name="volume">పరిమాణం</string>
+  <string name="notification_text">ఎకో సేవ నడుస్తోంది.</string>
+  <string name="exit">నిష్క్రమించు</string>
+</resources>

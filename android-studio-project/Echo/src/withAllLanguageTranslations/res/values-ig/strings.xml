@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">Echo</string>
+  <string name="volume">Ọnụọgụ</string>
+  <string name="notification_text">Ọrụ Echo na-arụ ọrụ.</string>
+  <string name="exit">Pụọ</string>
+</resources>

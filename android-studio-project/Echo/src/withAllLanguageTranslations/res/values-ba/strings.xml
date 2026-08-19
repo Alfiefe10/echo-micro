@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">Эхо</string>
+  <string name="volume">Күләм</string>
+  <string name="notification_text">Эхо хеҙмәте эшләй.</string>
+  <string name="exit">Сығыу</string>
+</resources>

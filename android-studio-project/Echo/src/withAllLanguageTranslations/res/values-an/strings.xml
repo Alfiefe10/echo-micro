@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">Eco</string>
+  <string name="volume">Volumen</string>
+  <string name="notification_text">O servicio d\'eco ye en funcionamiento.</string>
+  <string name="exit">Salir</string>
+</resources>

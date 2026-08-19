@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">Gema</string>
+  <string name="volume">Jumlah</string>
+  <string name="notification_text">Layanan Echo lagi mlaku.</string>
+  <string name="exit">Metu</string>
+</resources>

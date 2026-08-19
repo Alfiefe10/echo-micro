@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">Ехо</string>
+  <string name="volume">Обим</string>
+  <string name="notification_text">Услуга Echo ради.</string>
+  <string name="exit">Излаз</string>
+</resources>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">Echo</string>
+  <string name="volume">Tilavuus</string>
+  <string name="notification_text">Echo-palvelu on käynnissä.</string>
+  <string name="exit">Poistu</string>
+</resources>

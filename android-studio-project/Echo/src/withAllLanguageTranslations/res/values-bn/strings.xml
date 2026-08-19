@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">প্রতিধ্বনি</string>
+  <string name="volume">পরিমাণ</string>
+  <string name="notification_text">ইকো সার্ভিস চলছে.</string>
+  <string name="exit">বহির্গমন</string>
+</resources>

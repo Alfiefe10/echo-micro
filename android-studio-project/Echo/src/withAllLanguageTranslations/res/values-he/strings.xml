@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">אקו</string>
+  <string name="volume">נפח</string>
+  <string name="notification_text">שירות Echo פועל.</string>
+  <string name="exit">יציאה</string>
+</resources>

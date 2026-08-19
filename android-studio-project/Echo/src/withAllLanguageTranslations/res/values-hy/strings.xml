@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">Էխո</string>
+  <string name="volume">Ծավալ</string>
+  <string name="notification_text">Էխո ծառայությունը գործում է.</string>
+  <string name="exit">Ելք</string>
+</resources>

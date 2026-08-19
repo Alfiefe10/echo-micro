@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">Эха</string>
+  <string name="volume">Том</string>
+  <string name="notification_text">Служба Echo працуе.</string>
+  <string name="exit">Выхад</string>
+</resources>

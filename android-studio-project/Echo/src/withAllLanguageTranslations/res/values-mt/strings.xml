@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">Eko</string>
+  <string name="volume">Volum</string>
+  <string name="notification_text">Is-servizz Echo qed jaħdem.</string>
+  <string name="exit">ħruġ</string>
+</resources>

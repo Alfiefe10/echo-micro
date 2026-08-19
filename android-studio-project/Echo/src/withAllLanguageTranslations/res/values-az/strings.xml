@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">Eko</string>
+  <string name="volume">Həcm</string>
+  <string name="notification_text">Echo xidməti işləyir.</string>
+  <string name="exit">Çıxış</string>
+</resources>

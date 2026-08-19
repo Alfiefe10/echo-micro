@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">ထပ်ထွက်သံ</string>
+  <string name="volume">အသံအဆင့်</string>
+  <string name="notification_text">Echo ဝန်ဆောင်မှု လည်ပတ်နေပါသည်။.</string>
+  <string name="exit">ထွက်ရန်</string>
+</resources>

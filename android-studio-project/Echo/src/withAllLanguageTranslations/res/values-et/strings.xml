@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">Kaja</string>
+  <string name="volume">Maht</string>
+  <string name="notification_text">Echo-teenus töötab.</string>
+  <string name="exit">Väljumine</string>
+</resources>

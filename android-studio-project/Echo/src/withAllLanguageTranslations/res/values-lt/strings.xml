@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">Aidas</string>
+  <string name="volume">Tūris</string>
+  <string name="notification_text">„Echo“ paslauga veikia.</string>
+  <string name="exit">Išeiti</string>
+</resources>

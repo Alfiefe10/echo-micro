@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">ექო</string>
+  <string name="volume">მოცულობა</string>
+  <string name="notification_text">ექოს სერვისი მუშაობს.</string>
+  <string name="exit">გამოსვლა</string>
+</resources>

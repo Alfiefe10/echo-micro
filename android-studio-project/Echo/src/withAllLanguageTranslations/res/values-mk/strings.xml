@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">Ехо</string>
+  <string name="volume">Обем</string>
+  <string name="notification_text">Ехо-услугата работи.</string>
+  <string name="exit">Излез</string>
+</resources>
