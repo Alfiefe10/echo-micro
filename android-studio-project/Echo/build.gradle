@@ -2,7 +2,7 @@ apply from: '../constants.gradle'
 apply plugin: 'com.android.application'
 
 android {
-  namespace project.ext.applicationId
+  namespace project.ext.javaNamespace
 
   compileSdkVersion project.ext.compileSdkVersion
   buildToolsVersion project.ext.buildToolsVersion
@@ -34,8 +34,23 @@ android {
     }
   }
 
+  signingConfigs {
+    release {
+      if (System.getenv('KEYSTORE_FILE')) {
+        storeFile     file(System.getenv('KEYSTORE_FILE'))
+        storeType     'pkcs12'
+        storePassword System.getenv('KEYSTORE_PASSWORD')
+        keyAlias      System.getenv('KEY_ALIAS')
+        keyPassword   System.getenv('KEY_PASSWORD')
+      }
+    }
+  }
+
   buildTypes {
     release {
+      if (System.getenv('KEYSTORE_FILE')) {
+        signingConfig signingConfigs.release
+      }
       debuggable      false
       jniDebuggable   false
       minifyEnabled   true

@@ -1,9 +1,11 @@
 project.ext {
-  applicationId      = 'com.github.warren_bank.echo'
-  releaseVersionCode = Integer.parseInt("001000016", 10)  //Integer.MAX_VALUE == 2147483647
-  releaseVersion     = '001.00.00-16API'
+  applicationId      = 'io.github.alfiefe10.echo'
+  javaNamespace      = 'com.github.warren_bank.echo'
+  // CI passes -PversionName=X.Y.Z (from the tag) and -PversionCode=<run number>
+  releaseVersionCode = Integer.parseInt(project.findProperty('versionCode') ?: '1', 10)
+  releaseVersion     = project.findProperty('versionName') ?: '0.0.0-local'
   javaVersion        = JavaVersion.VERSION_1_8
-  minSdkVersion      = 16
+  minSdkVersion      = 26
   targetSdkVersion   = 35
   compileSdkVersion  = 35
   buildToolsVersion  = '35.0.0'

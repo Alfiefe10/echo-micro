@@ -1,17 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest
   xmlns:android="http://schemas.android.com/apk/res/android"
-  xmlns:tools="http://schemas.android.com/tools"
-  package="com.github.warren_bank.echo">
+  xmlns:tools="http://schemas.android.com/tools">
 
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
   <!-- FOREGROUND_SERVICE_MICROPHONE: required by Android >= 14 to start a FGS w/ foregroundServiceType="microphone" -->
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
   <uses-permission android:name="android.permission.RECORD_AUDIO" />
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
   <application
     android:icon="@drawable/launcher"
     android:label="@string/app_name"
+    android:theme="@style/AppTheme"
     android:allowBackup="false">
 
     <service
@@ -21,16 +22,23 @@
       android:exported="false" />
 
     <activity
-      android:name=".StartAudioEchoServiceActivity"
-      android:theme="@android:style/Theme.Translucent.NoTitleBar"
-      android:configChanges="keyboard|keyboardHidden|orientation|screenSize|screenLayout|smallestScreenSize|uiMode"
+      android:name=".MainActivity"
+      android:configChanges="keyboard|keyboardHidden|orientation|screenSize|screenLayout|smallestScreenSize"
       android:launchMode="singleTop"
       android:exported="true">
       <intent-filter>
         <action android:name="android.intent.action.MAIN" />
         <category android:name="android.intent.category.LAUNCHER" />
       </intent-filter>
-     </activity>
+    </activity>
+
+    <!-- Starts the service without showing the main screen (shortcuts, automation) -->
+    <activity
+      android:name=".StartAudioEchoServiceActivity"
+      android:theme="@android:style/Theme.Translucent.NoTitleBar"
+      android:configChanges="keyboard|keyboardHidden|orientation|screenSize|screenLayout|smallestScreenSize|uiMode"
+      android:launchMode="singleTop"
+      android:exported="true" />
 
   </application>
 </manifest>

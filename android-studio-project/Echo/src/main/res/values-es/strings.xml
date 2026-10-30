@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="volume">Volumen</string>
+  <string name="notification_text">Micro en marcha.</string>
+  <string name="exit">Salir</string>
+
+  <string name="output_bluetooth">Bluetooth: %s</string>
+  <string name="output_wired">Cable: %s</string>
+  <string name="output_wired_generic">Salida por cable</string>
+  <string name="output_speaker">Altavoz del móvil — conecta antes un altavoz</string>
+  <string name="output_other">Salida: %s</string>
+  <string name="feedback_warning">El micro oirá el altavoz del móvil y pitará</string>
+
+  <string name="status_idle">Parado</string>
+  <string name="status_live">En directo</string>
+  <string name="status_muted">Listo — mantén el botón para hablar</string>
+  <string name="status_permission_denied">Sin permiso de micrófono</string>
+  <string name="status_error">Error: %s</string>
+
+  <string name="hint_toggle">Toca para hablar</string>
+  <string name="hint_toggle_stop">Toca para parar</string>
+  <string name="hint_hold">Mantén para hablar</string>
+
+  <string name="mode_toggle">Pulsar</string>
+  <string name="mode_hold">Mantener para hablar</string>
+
+  <string name="gain">Ganancia: %d%%</string>
+  <string name="level">Nivel de entrada</string>
+  <string name="source">Fuente del micro</string>
+  <string name="source_mic">Estándar (MIC)</string>
+  <string name="source_performance">Directo / karaoke (VOICE_PERFORMANCE)</string>
+  <string name="source_unprocessed">Sin procesar (UNPROCESSED)</string>
+  <string name="source_communication">Llamada, con antieco (VOICE_COMMUNICATION)</string>
+  <string name="stop_service">Parar</string>
+</resources>

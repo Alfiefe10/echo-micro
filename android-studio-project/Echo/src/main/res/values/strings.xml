@@ -1,8 +1,37 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-  <string name="app_name">Echo</string>
+  <string name="app_name">Echo Micro</string>
 
   <string name="volume">Volume</string>
   <string name="notification_text">Echo service is running.</string>
   <string name="exit">Exit</string>
+
+  <string name="output_bluetooth">Bluetooth: %s</string>
+  <string name="output_wired">Cable: %s</string>
+  <string name="output_wired_generic">Wired output</string>
+  <string name="output_speaker">Phone speaker — connect a speaker first</string>
+  <string name="output_other">Output: %s</string>
+  <string name="feedback_warning">The mic will hear the phone speaker and squeal</string>
+
+  <string name="status_idle">Idle</string>
+  <string name="status_live">Live</string>
+  <string name="status_muted">Ready — hold the button to speak</string>
+  <string name="status_permission_denied">Microphone permission denied</string>
+  <string name="status_error">Error: %s</string>
+
+  <string name="hint_toggle">Tap to speak</string>
+  <string name="hint_toggle_stop">Tap to stop</string>
+  <string name="hint_hold">Hold to speak</string>
+
+  <string name="mode_toggle">Toggle</string>
+  <string name="mode_hold">Hold to speak</string>
+
+  <string name="gain">Gain: %d%%</string>
+  <string name="level">Input level</string>
+  <string name="source">Microphone source</string>
+  <string name="source_mic">Standard (MIC)</string>
+  <string name="source_performance">Live / karaoke (VOICE_PERFORMANCE)</string>
+  <string name="source_unprocessed">Unprocessed (UNPROCESSED)</string>
+  <string name="source_communication">Call, echo cancelling (VOICE_COMMUNICATION)</string>
+  <string name="stop_service">Stop</string>
 </resources>

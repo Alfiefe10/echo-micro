@@ -1,3 +1,16 @@
+#### Echo Micro (fork)
+
+Fork of [Echo](https://github.com/warren-bank/Android-Pipe-Audio-From-Microphone-To-Speaker) with a main screen:
+
+* current output (Bluetooth, wired or phone speaker, with a feedback warning)
+* big microphone button, in *Toggle* or *Hold to speak* mode
+* gain slider, input level meter and microphone source selector (MIC, VOICE_PERFORMANCE, UNPROCESSED, VOICE_COMMUNICATION)
+* audio at the device's native sample rate, to keep the low-latency path
+
+Package `io.github.alfiefe10.echo`, so it installs next to the original. Signed APKs: [Releases](https://github.com/Alfiefe10/echo-micro/releases).
+
+---
+
 #### [Echo](https://github.com/warren-bank/Android-Pipe-Audio-From-Microphone-To-Speaker)
 
 Android app to pipe audio from the microphone to the speaker, with adjustable gain.

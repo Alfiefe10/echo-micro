@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+  android:layout_width="match_parent"
+  android:layout_height="match_parent"
+  android:fillViewport="true">
+
+  <LinearLayout
+    android:id="@+id/root"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_horizontal"
+    android:orientation="vertical"
+    android:paddingLeft="24dp"
+    android:paddingTop="32dp"
+    android:paddingRight="24dp"
+    android:paddingBottom="24dp">
+
+    <TextView
+      android:id="@+id/outputLabel"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:gravity="center"
+      android:textColor="@color/text_primary"
+      android:textSize="20sp"
+      android:textStyle="bold" />
+
+    <TextView
+      android:id="@+id/warningLabel"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:layout_marginTop="4dp"
+      android:gravity="center"
+      android:text="@string/feedback_warning"
+      android:textColor="@color/warning"
+      android:textSize="14sp"
+      android:visibility="gone" />
+
+    <TextView
+      android:id="@+id/statusLabel"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:layout_marginTop="8dp"
+      android:gravity="center"
+      android:textColor="@color/text_secondary"
+      android:textSize="16sp" />
+
+    <Space
+      android:layout_width="match_parent"
+      android:layout_height="0dp"
+      android:layout_weight="1"
+      android:minHeight="24dp" />
+
+    <FrameLayout
+      android:id="@+id/micButton"
+      android:layout_width="220dp"
+      android:layout_height="220dp"
+      android:background="@drawable/mic_button"
+      android:clickable="true"
+      android:elevation="8dp"
+      android:focusable="true">
+
+      <ImageView
+        android:id="@+id/micIcon"
+        android:layout_width="96dp"
+        android:layout_height="96dp"
+        android:layout_gravity="center"
+        android:importantForAccessibility="no"
+        android:src="@drawable/ic_mic" />
+    </FrameLayout>
+
+    <TextView
+      android:id="@+id/hintLabel"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_marginTop="20dp"
+      android:textColor="@color/text_secondary"
+      android:textSize="18sp" />
+
+    <TextView
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:layout_marginTop="24dp"
+      android:text="@string/level"
+      android:textColor="@color/text_secondary"
+      android:textSize="14sp" />
+
+    <ProgressBar
+      android:id="@+id/levelBar"
+      style="@android:style/Widget.ProgressBar.Horizontal"
+      android:layout_width="match_parent"
+      android:layout_height="8dp"
+      android:layout_marginTop="6dp"
+      android:max="100"
+      android:progressDrawable="@drawable/level_bar" />
+
+    <Space
+      android:layout_width="match_parent"
+      android:layout_height="0dp"
+      android:layout_weight="1"
+      android:minHeight="24dp" />
+
+    <RadioGroup
+      android:id="@+id/modeGroup"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:orientation="horizontal">
+
+      <RadioButton
+        android:id="@+id/modeToggle"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="@string/mode_toggle"
+        android:textColor="@color/text_primary"
+        android:textSize="16sp" />
+
+      <RadioButton
+        android:id="@+id/modeHold"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="@string/mode_hold"
+        android:textColor="@color/text_primary"
+        android:textSize="16sp" />
+    </RadioGroup>
+
+    <TextView
+      android:id="@+id/gainLabel"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:layout_marginTop="20dp"
+      android:textColor="@color/text_primary"
+      android:textSize="16sp" />
+
+    <SeekBar
+      android:id="@+id/gainBar"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:layout_marginTop="4dp"
+      android:max="200" />
+
+    <TextView
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:layout_marginTop="20dp"
+      android:text="@string/source"
+      android:textColor="@color/text_primary"
+      android:textSize="16sp" />
+
+    <Spinner
+      android:id="@+id/sourceSpinner"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:layout_marginTop="4dp" />
+
+    <Button
+      android:id="@+id/stopButton"
+      style="@android:style/Widget.Material.Button.Borderless.Colored"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_marginTop="16dp"
+      android:text="@string/stop_service"
+      android:visibility="gone" />
+  </LinearLayout>
+</ScrollView>

@@ -1,0 +1,71 @@
+name: Build
+
+on:
+  push:
+    branches: [master]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: android-studio-project
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Version
+        id: version
+        working-directory: .
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            echo "name=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          else
+            echo "name=0.0.0-ci.${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Keystore
+        env:
+          KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.p12"
+            echo "KEYSTORE_FILE=$RUNNER_TEMP/release.p12" >> "$GITHUB_ENV"
+          fi
+
+      - name: Build
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          bash gradlew --no-daemon assembleWithAllLanguageTranslationsRelease \
+            -PversionName='${{ steps.version.outputs.name }}' \
+            -PversionCode='${{ github.run_number }}'
+          mkdir -p "$GITHUB_WORKSPACE/out"
+          cp Echo/build/outputs/apk/withAllLanguageTranslations/release/*.apk \
+            "$GITHUB_WORKSPACE/out/echo-micro-${{ steps.version.outputs.name }}.apk"
+          ls -l "$GITHUB_WORKSPACE/out"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: echo-micro-${{ steps.version.outputs.name }}
+          path: out/*.apk
+
+      - name: Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" out/*.apk --title "Echo Micro $GITHUB_REF_NAME" --generate-notes

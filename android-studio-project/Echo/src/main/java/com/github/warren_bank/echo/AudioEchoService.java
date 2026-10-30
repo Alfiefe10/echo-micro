@@ -10,6 +10,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ServiceInfo;
 import android.media.AudioAttributes;
+import android.media.AudioDeviceInfo;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioRecord;
@@ -21,13 +22,27 @@ import android.os.Process;
 import android.preference.PreferenceManager;
 
 public class AudioEchoService extends Service {
-  private static final String ACTION_EXIT     = "com.github.warren_bank.echo.ACTION_EXIT";
+  public  static final String ACTION_EXIT     = "com.github.warren_bank.echo.ACTION_EXIT";
   private static final String ACTION_VOLUME   = "com.github.warren_bank.echo.ACTION_VOLUME";
+  public  static final String ACTION_SET_GAIN = "com.github.warren_bank.echo.ACTION_SET_GAIN";
+  public  static final String ACTION_MUTE     = "com.github.warren_bank.echo.ACTION_MUTE";
   private static final String EXTRA_VOLUME_UP = "EXTRA_VOLUME_UP";
+  public  static final String EXTRA_GAIN      = "EXTRA_GAIN";
+  public  static final String EXTRA_MUTED     = "EXTRA_MUTED";
   private static final String CHANNEL_ID      = "AudioEchoService";
   private static final int NOTIFICATION_ID    = 101;
-  private static final float audioGainMax     = 2.0f;
+  public  static final float audioGainMax     = 2.0f;
   private static final float audioGainStep    = 0.1f;
+
+  public static final String PREF_AUDIO_GAIN   = "AUDIO_GAIN";
+  public static final String PREF_AUDIO_SOURCE = "AUDIO_SOURCE";
+
+  // State shared with MainActivity (same process).
+  public static volatile boolean isActive    = false;
+  public static volatile boolean isMuted     = false;
+  public static volatile float   inputLevel  = 0.0f;
+  public static volatile AudioDeviceInfo routedDevice = null;
+  public static volatile String  lastError   = null;
 
   private static int convertGainToPercent(float gain) {
     return Math.round(gain * 100.0f);
@@ -39,25 +54,29 @@ public class AudioEchoService extends Service {
 
   private static final int maxProgress = convertGainToProgress(audioGainMax);
 
-  private static final int SAMPLE_RATE = 44100;
+  private static final int DEFAULT_SAMPLE_RATE = 48000;
   private static final int CHANNEL_IN = AudioFormat.CHANNEL_IN_MONO;
   private static final int CHANNEL_OUT = AudioFormat.CHANNEL_OUT_MONO;
   private static final int AUDIO_FORMAT = AudioFormat.ENCODING_PCM_16BIT;
 
-  private boolean isRunning;
+  // Each audio thread owns its own flag, so a thread that is still shutting down
+  // cannot stop a newer one.
+  private static final class Session {
+    volatile boolean running = true;
+  }
+
+  private Session session;
   private float audioGain; // Adjustable gain multiplier
   private NotificationManager notificationManager;
   private Notification.Builder notificationBuilder;
   private String notificationTitle;
   private Thread audioThread;
-  private AudioRecord audioRecord;
-  private AudioTrack audioTrack;
 
   @Override
   public void onCreate() {
     super.onCreate();
 
-    isRunning = false;
+    session = null;
     restoreAudioGain();
 
     notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
@@ -85,14 +104,15 @@ public class AudioEchoService extends Service {
       this, 3, exitIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
     );
 
-    if (Build.VERSION.SDK_INT < 26) {
-      notificationBuilder = new Notification.Builder(this);
-    }
-    else {
-      createNotificationChannel();
+    // Tapping the notification opens the main screen
+    Intent openIntent = new Intent(this, MainActivity.class);
+    openIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+    PendingIntent openPendingIntent = PendingIntent.getActivity(
+      this, 4, openIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+    );
 
-      notificationBuilder = new Notification.Builder(this, CHANNEL_ID);
-    }
+    createNotificationChannel();
+    notificationBuilder = new Notification.Builder(this, CHANNEL_ID);
 
     String volume      = getString(R.string.volume);
     String volume_down = volume + " -";
@@ -103,6 +123,7 @@ public class AudioEchoService extends Service {
     notificationBuilder
       .setSmallIcon(R.drawable.notification)
       .setContentText(getString(R.string.notification_text))
+      .setContentIntent(openPendingIntent)
       .addAction(
         R.drawable.arrow_circle_down,
         volume_down,
@@ -149,7 +170,7 @@ public class AudioEchoService extends Service {
   @Override
   public int onStartCommand(Intent intent, int flags, int startId) {
     onStart(intent, startId);
-    return START_STICKY;
+    return START_NOT_STICKY;
   }
 
   @Override
@@ -157,7 +178,7 @@ public class AudioEchoService extends Service {
     try {
       processIntent(intent);
 
-      if (!isRunning) {
+      if (session == null) {
         if (Build.VERSION.SDK_INT < 30)
           startForeground(NOTIFICATION_ID, getNotification());
         else
@@ -171,6 +192,9 @@ public class AudioEchoService extends Service {
 
   private void processIntent(Intent intent) throws Exception {
     if (intent == null) return;
+
+    if (intent.hasExtra(EXTRA_MUTED))
+      isMuted = intent.getBooleanExtra(EXTRA_MUTED, false);
 
     String action = intent.getAction();
     if (action == null) return;
@@ -194,47 +218,74 @@ public class AudioEchoService extends Service {
         }
       }
 
+      saveAudioGain();
+      updateNotificationProgress();
+    }
+    else if (action.equals(ACTION_SET_GAIN)) {
+      float gain = intent.getFloatExtra(EXTRA_GAIN, audioGain);
+      audioGain = Math.max(0.0f, Math.min(audioGainMax, gain));
+      saveAudioGain();
       updateNotificationProgress();
     }
     else if (action.equals(ACTION_EXIT)) {
-      if (isRunning)
-        isRunning = false;
-      else
-        stopSelf();
+      if (session != null) {
+        session.running = false;
+        session = null;
+      }
+      isActive = false;
+      stopForeground(true);
+      stopSelf();
 
       throw new Exception("exiting");
     }
   }
 
+  private int getNativeSampleRate() {
+    try {
+      AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+      String rate = am.getProperty(AudioManager.PROPERTY_OUTPUT_SAMPLE_RATE);
+      if (rate != null) return Integer.parseInt(rate);
+    }
+    catch(Exception ignore) {}
+    return DEFAULT_SAMPLE_RATE;
+  }
+
+  private int getAudioSource() {
+    SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+    return prefs.getInt(PREF_AUDIO_SOURCE, MediaRecorder.AudioSource.MIC);
+  }
+
   private void startAudioEcho() {
-    isRunning = true;
+    final Session current = new Session();
+    session    = current;
+    isActive   = true;
+    lastError  = null;
+    inputLevel = 0.0f;
+
+    final int sampleRate  = getNativeSampleRate();
+    final int audioSource = getAudioSource();
+
     audioThread = new Thread(() -> {
       Process.setThreadPriority(Process.THREAD_PRIORITY_URGENT_AUDIO);
 
-      int minRecordBuf = AudioRecord.getMinBufferSize(SAMPLE_RATE, CHANNEL_IN, AUDIO_FORMAT);
-      int minTrackBuf = AudioTrack.getMinBufferSize(SAMPLE_RATE, CHANNEL_OUT, AUDIO_FORMAT);
+      AudioRecord audioRecord = null;
+      AudioTrack  audioTrack  = null;
 
-      audioRecord = new AudioRecord(
-        MediaRecorder.AudioSource.MIC,
-        SAMPLE_RATE,
-        CHANNEL_IN,
-        AUDIO_FORMAT,
-        minRecordBuf * 2
-      );
+      try {
+        int minRecordBuf = AudioRecord.getMinBufferSize(sampleRate, CHANNEL_IN, AUDIO_FORMAT);
+        int minTrackBuf  = AudioTrack.getMinBufferSize(sampleRate, CHANNEL_OUT, AUDIO_FORMAT);
 
-      audioTrack = null;
-      if (Build.VERSION.SDK_INT < 23) {
-        audioTrack = new AudioTrack(
-          AudioManager.STREAM_VOICE_CALL,
-          SAMPLE_RATE,
-          CHANNEL_OUT,
+        audioRecord = new AudioRecord(
+          audioSource,
+          sampleRate,
+          CHANNEL_IN,
           AUDIO_FORMAT,
-          minTrackBuf * 2,
-          AudioTrack.MODE_STREAM
+          minRecordBuf * 2
         );
-      }
-      else {
-        AudioTrack.Builder builder = new AudioTrack.Builder()
+        if (audioRecord.getState() != AudioRecord.STATE_INITIALIZED)
+          throw new IllegalStateException("AudioRecord");
+
+        audioTrack = new AudioTrack.Builder()
           .setAudioAttributes(
             new AudioAttributes.Builder()
               .setUsage(AudioAttributes.USAGE_MEDIA)
@@ -244,58 +295,88 @@ public class AudioEchoService extends Service {
           .setAudioFormat(
             new AudioFormat.Builder()
               .setEncoding(AUDIO_FORMAT)
-              .setSampleRate(SAMPLE_RATE)
+              .setSampleRate(sampleRate)
               .setChannelMask(CHANNEL_OUT)
               .build()
           )
           .setBufferSizeInBytes(minTrackBuf * 2)
-          .setTransferMode(AudioTrack.MODE_STREAM);
+          .setTransferMode(AudioTrack.MODE_STREAM)
+          .setPerformanceMode(AudioTrack.PERFORMANCE_MODE_LOW_LATENCY)
+          .build();
 
-        if (Build.VERSION.SDK_INT >= 26)
-          builder.setPerformanceMode(AudioTrack.PERFORMANCE_MODE_LOW_LATENCY);
+        short[] buffer = new short[minRecordBuf / 2];
+        audioRecord.startRecording();
+        audioTrack.play();
+        routedDevice = audioTrack.getRoutedDevice();
 
-        audioTrack = builder.build();
-      }
-
-      short[] buffer = new short[minRecordBuf / 2];
-      audioRecord.startRecording();
-      audioTrack.play();
-
-      while (isRunning) {
-        int readSize = audioRecord.read(buffer, 0, buffer.length);
-        if (readSize > 0) {
-          // Apply adjustable gain control
-          if (audioGain != 1.0f) {
+        int frames = 0;
+        while (current.running) {
+          int readSize = audioRecord.read(buffer, 0, buffer.length);
+          if (readSize > 0) {
+            int peak = 0;
+            float gain = isMuted ? 0.0f : audioGain;
             for (int i = 0; i < readSize; i++) {
-              int scaled = (int) (buffer[i] * audioGain);
-              // Clamp values to prevent 16-bit PCM integer overflow/distortion
-              if (scaled > 32767) scaled = 32767;
-              else if (scaled < -32768) scaled = -32768;
-              buffer[i] = (short) scaled;
+              int sample = buffer[i];
+              if (Math.abs(sample) > peak) peak = Math.abs(sample);
+              // Apply adjustable gain control
+              if (gain != 1.0f) {
+                int scaled = (int) (sample * gain);
+                // Clamp values to prevent 16-bit PCM integer overflow/distortion
+                if (scaled > 32767) scaled = 32767;
+                else if (scaled < -32768) scaled = -32768;
+                buffer[i] = (short) scaled;
+              }
             }
+            inputLevel = peak / 32768.0f;
+            audioTrack.write(buffer, 0, readSize);
+
+            // The route can change mid-session (e.g. a Bluetooth speaker connects)
+            if ((++frames % 50) == 0)
+              routedDevice = audioTrack.getRoutedDevice();
           }
-          audioTrack.write(buffer, 0, readSize);
+          else if (readSize < 0) {
+            throw new IllegalStateException("read " + readSize);
+          }
         }
       }
+      catch(Exception e) {
+        lastError = e.getMessage();
+      }
+      finally {
+        if (audioRecord != null) {
+          try { audioRecord.stop(); } catch(Exception ignore) {}
+          audioRecord.release();
+        }
+        if (audioTrack != null) {
+          try {
+            audioTrack.pause();
+            audioTrack.flush();
+            audioTrack.stop();
+          } catch(Exception ignore) {}
+          audioTrack.release();
+        }
+        inputLevel = 0.0f;
+      }
 
-      audioRecord.stop();
-      audioRecord.release();
-      audioRecord = null;
-
-      audioTrack.pause();
-      audioTrack.flush();
-      audioTrack.stop();
-      audioTrack.release();
-      audioTrack = null;
-
-      stopSelf();
+      // Only the session that is still current may stop the service
+      if (session == current) {
+        session = null;
+        isActive = false;
+        routedDevice = null;
+        stopSelf();
+      }
     });
     audioThread.start();
   }
 
   @Override
   public void onDestroy() {
-    isRunning = false;
+    if (session != null) {
+      session.running = false;
+      session = null;
+    }
+    isActive = false;
+    routedDevice = null;
     if (audioThread != null) {
       audioThread.interrupt();
     }
@@ -311,12 +392,12 @@ public class AudioEchoService extends Service {
   private void saveAudioGain() {
     SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
     SharedPreferences.Editor editor = prefs.edit();
-    editor.putFloat("AUDIO_GAIN", audioGain);
-    editor.commit();
+    editor.putFloat(PREF_AUDIO_GAIN, audioGain);
+    editor.apply();
   }
 
   private void restoreAudioGain() {
     SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-    audioGain = prefs.getFloat("AUDIO_GAIN", 1.0f);
+    audioGain = prefs.getFloat(PREF_AUDIO_GAIN, 1.0f);
   }
 }
