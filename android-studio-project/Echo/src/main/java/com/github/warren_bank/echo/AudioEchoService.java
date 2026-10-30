@@ -16,10 +16,14 @@ import android.media.AudioManager;
 import android.media.AudioRecord;
 import android.media.AudioTrack;
 import android.media.MediaRecorder;
+import android.media.MicrophoneDirection;
+import android.media.audiofx.NoiseSuppressor;
 import android.os.Build;
 import android.os.IBinder;
 import android.os.Process;
 import android.preference.PreferenceManager;
+
+import com.github.warren_bank.echo.dsp.AudioChain;
 
 public class AudioEchoService extends Service {
   public  static final String ACTION_EXIT     = "com.github.warren_bank.echo.ACTION_EXIT";
@@ -37,6 +41,13 @@ public class AudioEchoService extends Service {
   public static final String PREF_AUDIO_GAIN   = "AUDIO_GAIN";
   public static final String PREF_AUDIO_SOURCE = "AUDIO_SOURCE";
   public static final String PREF_GUARD_SPEAKER = "GUARD_SPEAKER";
+  public static final String PREF_HIGH_PASS     = "HIGH_PASS";
+  public static final String PREF_LIMITER       = "LIMITER";
+  public static final String PREF_MIC_DIRECTION = "MIC_DIRECTION";
+  public static final String PREF_SYSTEM_NS     = "SYSTEM_NS";
+
+  // 10 ms at 48 kHz: small blocks keep the delay down
+  private static final int BLOCK_MS = 10;
 
   // State shared with MainActivity (same process).
   public static volatile boolean isActive    = false;
@@ -47,6 +58,9 @@ public class AudioEchoService extends Service {
   // Silence the output while it plays on the phone's own speaker (feedback howl)
   public static volatile boolean guardSpeaker = true;
   public static volatile boolean isBlocked    = false;
+  // Processing switches, applied live
+  public static volatile boolean highPass     = true;
+  public static volatile boolean limiter      = true;
 
   public static boolean isPhoneSpeaker(AudioDeviceInfo device) {
     if (device == null) return false;
@@ -90,7 +104,7 @@ public class AudioEchoService extends Service {
 
     session = null;
     restoreAudioGain();
-    guardSpeaker = PreferenceManager.getDefaultSharedPreferences(this).getBoolean(PREF_GUARD_SPEAKER, true);
+    loadSettings(this);
 
     notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 
@@ -253,6 +267,13 @@ public class AudioEchoService extends Service {
     }
   }
 
+  public static void loadSettings(Context context) {
+    SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+    guardSpeaker = prefs.getBoolean(PREF_GUARD_SPEAKER, true);
+    highPass     = prefs.getBoolean(PREF_HIGH_PASS, true);
+    limiter      = prefs.getBoolean(PREF_LIMITER, true);
+  }
+
   private int getNativeSampleRate() {
     try {
       AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
@@ -277,12 +298,16 @@ public class AudioEchoService extends Service {
 
     final int sampleRate  = getNativeSampleRate();
     final int audioSource = getAudioSource();
+    SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+    final boolean micDirection = prefs.getBoolean(PREF_MIC_DIRECTION, true);
+    final boolean systemNs     = prefs.getBoolean(PREF_SYSTEM_NS, false);
 
     audioThread = new Thread(() -> {
       Process.setThreadPriority(Process.THREAD_PRIORITY_URGENT_AUDIO);
 
       AudioRecord audioRecord = null;
       AudioTrack  audioTrack  = null;
+      NoiseSuppressor noiseSuppressor = null;
 
       try {
         int minRecordBuf = AudioRecord.getMinBufferSize(sampleRate, CHANNEL_IN, AUDIO_FORMAT);
@@ -297,6 +322,17 @@ public class AudioEchoService extends Service {
         );
         if (audioRecord.getState() != AudioRecord.STATE_INITIALIZED)
           throw new IllegalStateException("AudioRecord");
+
+        // Ask for the mic facing the person who speaks; support depends on the phone
+        if (micDirection && Build.VERSION.SDK_INT >= 29) {
+          audioRecord.setPreferredMicrophoneDirection(MicrophoneDirection.MIC_DIRECTION_TOWARDS_USER);
+          audioRecord.setPreferredMicrophoneFieldDimension(1.0f);
+        }
+
+        if (systemNs && NoiseSuppressor.isAvailable()) {
+          noiseSuppressor = NoiseSuppressor.create(audioRecord.getAudioSessionId());
+          if (noiseSuppressor != null) noiseSuppressor.setEnabled(true);
+        }
 
         audioTrack = new AudioTrack.Builder()
           .setAudioAttributes(
@@ -317,7 +353,9 @@ public class AudioEchoService extends Service {
           .setPerformanceMode(AudioTrack.PERFORMANCE_MODE_LOW_LATENCY)
           .build();
 
-        short[] buffer = new short[minRecordBuf / 2];
+        AudioChain chain = new AudioChain(sampleRate);
+        short[] buffer = new short[sampleRate * BLOCK_MS / 1000];
+        float[] work   = new float[buffer.length];
         audioRecord.startRecording();
         audioTrack.play();
         routedDevice = audioTrack.getRoutedDevice();
@@ -332,21 +370,10 @@ public class AudioEchoService extends Service {
             // Until the route is known, assume the worst
             isBlocked = guardSpeaker && (routedDevice == null || isPhoneSpeaker(routedDevice));
 
-            int peak = 0;
+            chain.highPassEnabled = highPass;
+            chain.limiterEnabled  = limiter;
             float gain = (isMuted || isBlocked) ? 0.0f : audioGain;
-            for (int i = 0; i < readSize; i++) {
-              int sample = buffer[i];
-              if (Math.abs(sample) > peak) peak = Math.abs(sample);
-              // Apply adjustable gain control
-              if (gain != 1.0f) {
-                int scaled = (int) (sample * gain);
-                // Clamp values to prevent 16-bit PCM integer overflow/distortion
-                if (scaled > 32767) scaled = 32767;
-                else if (scaled < -32768) scaled = -32768;
-                buffer[i] = (short) scaled;
-              }
-            }
-            inputLevel = peak / 32768.0f;
+            inputLevel = chain.process(buffer, work, readSize, gain);
             audioTrack.write(buffer, 0, readSize);
           }
           else if (readSize < 0) {
@@ -358,6 +385,7 @@ public class AudioEchoService extends Service {
         lastError = e.getMessage();
       }
       finally {
+        if (noiseSuppressor != null) noiseSuppressor.release();
         if (audioRecord != null) {
           try { audioRecord.stop(); } catch(Exception ignore) {}
           audioRecord.release();

@@ -38,4 +38,8 @@
   <string name="status_blocked">Blocked: playing through the phone speaker</string>
   <string name="no_speaker_title">No speaker connected</string>
   <string name="no_speaker_message">The sound would come out of the phone itself, right next to the mic, and squeal. Connect a Bluetooth or wired speaker.\n\nIf a speaker is connected and the app does not detect it, turn off “Block when playing through the phone speaker”.</string>
+  <string name="high_pass">Cut low rumble (below 120 Hz)</string>
+  <string name="limiter">Limiter (protects the speaker)</string>
+  <string name="mic_direction">Directional mic, facing you (if the phone supports it)</string>
+  <string name="system_ns">Phone noise suppression</string>
 </resources>

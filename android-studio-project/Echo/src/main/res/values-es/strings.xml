@@ -36,4 +36,8 @@
   <string name="status_blocked">Bloqueado: sonaría por el altavoz del móvil</string>
   <string name="no_speaker_title">No hay altavoz conectado</string>
   <string name="no_speaker_message">El sonido saldría por el propio móvil, junto al micro, y pitaría. Conecta un altavoz por Bluetooth o por cable.\n\nSi el altavoz está conectado y la app no lo detecta, desactiva «Bloquear si suena por el altavoz del móvil».</string>
+  <string name="high_pass">Quitar graves (por debajo de 120 Hz)</string>
+  <string name="limiter">Limitador (protege el altavoz)</string>
+  <string name="mic_direction">Micro direccional, hacia ti (si el móvil lo admite)</string>
+  <string name="system_ns">Supresor de ruido del móvil</string>
 </resources>

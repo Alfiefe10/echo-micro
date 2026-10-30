@@ -162,6 +162,42 @@
       android:textColor="@color/text_primary"
       android:textSize="16sp" />
 
+    <Switch
+      android:id="@+id/highPassSwitch"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:layout_marginTop="12dp"
+      android:text="@string/high_pass"
+      android:textColor="@color/text_primary"
+      android:textSize="16sp" />
+
+    <Switch
+      android:id="@+id/limiterSwitch"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:layout_marginTop="12dp"
+      android:text="@string/limiter"
+      android:textColor="@color/text_primary"
+      android:textSize="16sp" />
+
+    <Switch
+      android:id="@+id/micDirSwitch"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:layout_marginTop="12dp"
+      android:text="@string/mic_direction"
+      android:textColor="@color/text_primary"
+      android:textSize="16sp" />
+
+    <Switch
+      android:id="@+id/systemNsSwitch"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:layout_marginTop="12dp"
+      android:text="@string/system_ns"
+      android:textColor="@color/text_primary"
+      android:textSize="16sp" />
+
     <Button
       android:id="@+id/stopButton"
       style="@android:style/Widget.Material.Button.Borderless.Colored"

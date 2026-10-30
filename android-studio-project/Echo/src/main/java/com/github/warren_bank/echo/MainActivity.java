@@ -69,7 +69,6 @@ public class MainActivity extends Activity {
   private SeekBar gainBar;
   private Spinner sourceSpinner;
   private Button stopButton;
-  private Switch guardSwitch;
 
   private boolean holdMode;
   private boolean pendingStartMuted;
@@ -113,7 +112,6 @@ public class MainActivity extends Activity {
     gainBar       = findViewById(R.id.gainBar);
     sourceSpinner = findViewById(R.id.sourceSpinner);
     stopButton    = findViewById(R.id.stopButton);
-    guardSwitch   = findViewById(R.id.guardSwitch);
 
     holdMode = prefs.getBoolean(PREF_HOLD_MODE, false);
     modeGroup.check(holdMode ? R.id.modeHold : R.id.modeToggle);
@@ -125,13 +123,12 @@ public class MainActivity extends Activity {
 
     stopButton.setOnClickListener(v -> stopEcho());
 
-    AudioEchoService.guardSpeaker = prefs.getBoolean(AudioEchoService.PREF_GUARD_SPEAKER, true);
-    guardSwitch.setChecked(AudioEchoService.guardSpeaker);
-    guardSwitch.setOnCheckedChangeListener((button, checked) -> {
-      AudioEchoService.guardSpeaker = checked;
-      prefs.edit().putBoolean(AudioEchoService.PREF_GUARD_SPEAKER, checked).apply();
-      updateUi();
-    });
+    AudioEchoService.loadSettings(this);
+    bindSwitch(R.id.guardSwitch,     AudioEchoService.PREF_GUARD_SPEAKER, true,  false);
+    bindSwitch(R.id.highPassSwitch,  AudioEchoService.PREF_HIGH_PASS,     true,  false);
+    bindSwitch(R.id.limiterSwitch,   AudioEchoService.PREF_LIMITER,       true,  false);
+    bindSwitch(R.id.micDirSwitch,    AudioEchoService.PREF_MIC_DIRECTION, true,  true);
+    bindSwitch(R.id.systemNsSwitch,  AudioEchoService.PREF_SYSTEM_NS,     false, true);
 
     updateUi();
   }
@@ -208,14 +205,29 @@ public class MainActivity extends Activity {
         prefs.edit().putInt(AudioEchoService.PREF_AUDIO_SOURCE, source).apply();
 
         // The source is read when the audio thread starts: restart it
-        if (AudioEchoService.isActive) {
-          boolean muted = AudioEchoService.isMuted;
-          stopEcho();
-          handler.postDelayed(() -> startEcho(muted), 300);
-        }
+        restartIfActive();
       }
 
       @Override public void onNothingSelected(AdapterView<?> parent) {}
+    });
+  }
+
+  private void restartIfActive() {
+    if (!AudioEchoService.isActive) return;
+    boolean muted = AudioEchoService.isMuted;
+    stopEcho();
+    handler.postDelayed(() -> startEcho(muted), 300);
+  }
+
+  // restart: the setting is only read when the audio thread starts
+  private void bindSwitch(int id, String pref, boolean byDefault, boolean restart) {
+    Switch view = findViewById(id);
+    view.setChecked(prefs.getBoolean(pref, byDefault));
+    view.setOnCheckedChangeListener((button, checked) -> {
+      prefs.edit().putBoolean(pref, checked).apply();
+      AudioEchoService.loadSettings(this);
+      if (restart) restartIfActive();
+      updateUi();
     });
   }
 

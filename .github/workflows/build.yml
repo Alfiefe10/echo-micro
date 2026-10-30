@@ -25,6 +25,12 @@ jobs:
           java-version: '17'
           cache: gradle
 
+      - name: DSP tests
+        working-directory: .
+        run: |
+          javac -d "$RUNNER_TEMP/dsp" android-studio-project/Echo/src/main/java/com/github/warren_bank/echo/dsp/*.java dsp-tests/*.java
+          java -ea -cp "$RUNNER_TEMP/dsp" DspTests
+
       - name: Version
         id: version
         working-directory: .
