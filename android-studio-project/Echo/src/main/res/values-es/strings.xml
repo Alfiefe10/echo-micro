@@ -53,4 +53,11 @@
 
   <string name="no_speaker_title">No hay altavoz conectado</string>
   <string name="no_speaker_message">El sonido saldría por el propio móvil, junto al micro, y pitaría. Conecta un altavoz por Bluetooth o por cable.\n\nSi el altavoz está conectado y la app no lo detecta, desactiva «Bloquear si suena por el altavoz del móvil» en Avanzado.</string>
+  <string name="dac_check">Comprobar adaptador (DAC)</string>
+  <string name="dac_title">Salida por cable</string>
+  <string name="dac_usb">Adaptador USB con DAC detectado: %1$s.\n\nConvierte el sonido él mismo, así que funciona en cualquier móvil con audio por USB-C. Frecuencias: %2$s.</string>
+  <string name="dac_analog">Salida analógica detectada (%s): la conversión la hace el móvil (tiene DAC propio o jack de auriculares).</string>
+  <string name="dac_none">No se detecta ninguna salida de audio por cable.\n\nSi el adaptador USB-C está enchufado y no aparece nada, casi seguro que es pasivo (sin DAC). Este móvil necesita un adaptador con DAC, o un altavoz por Bluetooth.</string>
+  <string name="dac_unknown_rates">no indicadas</string>
+  <string name="output_wired_dac_subtitle">Retraso bajo · DAC USB</string>
 </resources>

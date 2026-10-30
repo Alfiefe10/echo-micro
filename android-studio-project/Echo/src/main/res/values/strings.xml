@@ -55,4 +55,11 @@
 
   <string name="no_speaker_title">No speaker connected</string>
   <string name="no_speaker_message">The sound would come out of the phone itself, right next to the mic, and squeal. Connect a Bluetooth or wired speaker.\n\nIf a speaker is connected and the app does not detect it, turn off “Block when playing through the phone speaker” in Advanced.</string>
+  <string name="dac_check">Check adapter (DAC)</string>
+  <string name="dac_title">Wired output</string>
+  <string name="dac_usb">USB adapter with DAC detected: %1$s.\n\nIt converts the sound itself, so it works on any phone with USB-C audio. Sample rates: %2$s.</string>
+  <string name="dac_analog">Analog output detected (%s): the phone does the conversion (it has its own DAC or headphone jack).</string>
+  <string name="dac_none">No wired audio output detected.\n\nIf the USB-C adapter is plugged in and nothing shows up, it is most likely a passive adapter (no DAC). This phone needs an adapter with a DAC, or a speaker connected by Bluetooth.</string>
+  <string name="dac_unknown_rates">not reported</string>
+  <string name="output_wired_dac_subtitle">Low delay · USB DAC</string>
 </resources>

@@ -151,6 +151,7 @@ public class MainActivity extends Activity {
     });
 
     stopButton.setOnClickListener(v -> stopEcho());
+    findViewById(R.id.dacButton).setOnClickListener(v -> showDacCheck());
 
     updateUi();
   }
@@ -457,6 +458,54 @@ public class MainActivity extends Activity {
         || type == AudioDeviceInfo.TYPE_AUX_LINE;
   }
 
+  // Android only lists USB audio devices that have their own DAC; a passive
+  // USB-C to jack adapter shows up as an analog headset, or not at all on
+  // phones without analog audio over USB-C.
+  private static boolean isUsbDac(int type) {
+    return type == AudioDeviceInfo.TYPE_USB_HEADSET
+        || type == AudioDeviceInfo.TYPE_USB_DEVICE
+        || type == AudioDeviceInfo.TYPE_USB_ACCESSORY;
+  }
+
+  private void showDacCheck() {
+    AudioDeviceInfo usb = null, analog = null;
+    for (AudioDeviceInfo device : audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS)) {
+      int type = device.getType();
+      if (isUsbDac(type) && usb == null) usb = device;
+      else if (isWired(type) && analog == null) analog = device;
+    }
+
+    String message;
+    if (usb != null) {
+      int[] rates = usb.getSampleRates();
+      StringBuilder list = new StringBuilder();
+      for (int rate : rates) {
+        if (list.length() > 0) list.append(", ");
+        list.append(rate / 1000.0).append(" kHz");
+      }
+      String rateText = (list.length() > 0) ? list.toString() : getString(R.string.dac_unknown_rates);
+      message = getString(R.string.dac_usb, deviceName(usb), rateText);
+    }
+    else if (analog != null) {
+      message = getString(R.string.dac_analog, deviceName(analog));
+    }
+    else {
+      message = getString(R.string.dac_none);
+    }
+
+    new AlertDialog.Builder(this)
+      .setTitle(R.string.dac_title)
+      .setMessage(message)
+      .setPositiveButton(android.R.string.ok, null)
+      .show();
+  }
+
+  private String deviceName(AudioDeviceInfo device) {
+    CharSequence name = device.getProductName();
+    String text = (name == null) ? "" : name.toString().trim();
+    return text.isEmpty() ? getString(R.string.output_wired_generic) : text;
+  }
+
   private static boolean isOnPhoneSpeaker(AudioDeviceInfo device) {
     return (device == null) || AudioEchoService.isPhoneSpeaker(device);
   }
@@ -516,7 +565,7 @@ public class MainActivity extends Activity {
       else if (isWired(type)) {
         icon = R.drawable.ic_wired;
         outputTitle.setText(name.isEmpty() ? getString(R.string.output_wired_generic) : getString(R.string.output_wired_title, name));
-        subtitle = getString(R.string.output_wired_subtitle);
+        subtitle = getString(isUsbDac(type) ? R.string.output_wired_dac_subtitle : R.string.output_wired_subtitle);
       }
       else {
         icon = R.drawable.ic_speaker;
