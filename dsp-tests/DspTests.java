@@ -213,6 +213,116 @@ public class DspTests {
     }
   }
 
+  // Gaussian noise at a given RMS level
+  static float[] noise(double db, int n, long seed) {
+    Random r = new Random(seed);
+    double sd = Math.pow(10, db / 20);
+    float[] x = new float[n];
+    for (int i = 0; i < n; i++) x[i] = (float) (sd * r.nextGaussian());
+    return x;
+  }
+
+  static void inBlocks(float[] x, java.util.function.BiConsumer<float[], Integer> f) {
+    float[] blk = new float[480];
+    for (int s = 0; s + 480 <= x.length; s += 480) {
+      System.arraycopy(x, s, blk, 0, 480);
+      f.accept(blk, s);
+      System.arraycopy(blk, 0, x, s, 480);
+    }
+  }
+
+  static void gateTests() {
+    NoiseGate gate = new NoiseGate(SR);
+    float[] bg = noise(-60, SR * 3, 7);
+    double before = levelDb(bg, SR);
+    inBlocks(bg, (b, s) -> gate.process(b, 480));
+    double drop = before - levelDb(bg, SR);
+    check(drop >= 20 && !gate.isOpen(), String.format("puerta: ruido a -60 dBFS atenuado %.1f dB", drop));
+
+    NoiseGate g2 = new NoiseGate(SR);
+    float[] voice = speech(SR * 6, 5, false), out = voice.clone();
+    inBlocks(out, (b, s) -> g2.process(b, 480));
+    double loss = levelDb(voice, 0) - levelDb(out, 0);
+    check(loss <= 1, String.format("puerta: la voz baja %.2f dB", loss));
+
+    NoiseGate g3 = new NoiseGate(SR);
+    float[] x = noise(-60, SR * 2, 8);
+    int onset = SR;
+    for (int i = onset; i < x.length; i++) x[i] += (float) (0.1 * Math.sin(2 * Math.PI * 1000 * i / SR));
+    float[] one = new float[1];
+    int opened = -1;
+    for (int i = 0; i < x.length && opened < 0; i++) {
+      one[0] = x[i];
+      g3.process(one, 1);
+      if (i >= onset && g3.getGainDb() >= -1) opened = i - onset;
+    }
+    double ms = opened * 1000.0 / SR;
+    check(opened >= 0 && ms < 5, String.format("puerta: abre en %.2f ms", ms));
+  }
+
+  static void agcTests() {
+    int n = SR * 10;
+    float[] voice = speech(n, 6, false);
+    double scale = Math.pow(10, (-35 - levelDb(voice, 0)) / 20);
+    for (int i = 0; i < n; i++) voice[i] *= scale;
+    AutoGain agc = new AutoGain(SR);
+    boolean[] talking = new boolean[n / 480];
+    double[] sums = new double[2];
+    inBlocks(voice, (b, s) -> {
+      double e = 0;
+      for (int i = 0; i < 480; i++) e += b[i] * b[i];
+      boolean v = 10 * Math.log10(e / 480 + 1e-20) > -45;
+      talking[s / 480] = v;
+      agc.process(b, 480, v);
+      if (v && s >= n / 2) {
+        for (int i = 0; i < 480; i++) sums[0] += b[i] * b[i];
+        sums[1] += 480;
+      }
+    });
+    double outDb = 10 * Math.log10(sums[0] / sums[1]);
+    check(Math.abs(outDb + 20) <= 3, String.format("AGC: voz a -35 dBFS -> %.1f dBFS con voz (ganancia %+.1f dB)", outDb, agc.getGainDb()));
+
+    double g = agc.getGainDb();
+    float[] quiet = noise(-60, SR * 3, 9);
+    inBlocks(quiet, (b, s) -> agc.process(b, 480, false));
+    check(agc.getGainDb() == g, String.format("AGC: en silencio la ganancia no sube (%+.2f -> %+.2f dB)", g, agc.getGainDb()));
+
+    AutoGain fresh = new AutoGain(SR);
+    float[] q2 = noise(-60, SR * 3, 10);
+    inBlocks(q2, (b, s) -> fresh.process(b, 480, false));
+    check(fresh.getGainDb() == 0, String.format("AGC: sin voz desde el principio se queda en %+.2f dB", fresh.getGainDb()));
+  }
+
+  static double eqDb(int preset, double freq) {
+    Equalizer eq = new Equalizer(SR);
+    eq.setPreset(preset);
+    float[] x = sine(freq, 0.5, SR);
+    inBlocks(x, (b, s) -> eq.process(b, 480));
+    return rmsDb(x, SR / 2) - rmsDb(sine(freq, 0.5, SR), SR / 2);
+  }
+
+  static void eqTests() {
+    double flat = eqDb(Equalizer.FLAT, 1000);
+    check(Math.abs(flat) < 0.1, String.format("ecualizador: FLAT a 1 kHz %+.2f dB", flat));
+    double clear = eqDb(Equalizer.CLEAR_VOICE, 3000);
+    check(Math.abs(clear - 4) < 0.5, String.format("ecualizador: CLEAR_VOICE a 3 kHz %+.2f dB", clear));
+    double low = eqDb(Equalizer.SMALL_SPEAKER, 80);
+    check(low <= -10, String.format("ecualizador: SMALL_SPEAKER a 80 Hz %+.1f dB", low));
+
+    // Changing preset while playing: no jump bigger than the signal's own slope
+    Equalizer eq = new Equalizer(SR);
+    float[] x = sine(1000, 0.5, SR);
+    inBlocks(x, (b, s) -> {
+      if (s == SR / 4) eq.setPreset(Equalizer.SMALL_SPEAKER);
+      if (s == SR / 2) eq.setPreset(Equalizer.CLEAR_VOICE);
+      if (s == 3 * SR / 4) eq.setPreset(Equalizer.FLAT);
+      eq.process(b, 480);
+    });
+    double steady = 0.5 * 2 * Math.PI * 1000 / SR, jump = 0;
+    for (int i = 1; i < x.length; i++) jump = Math.max(jump, Math.abs(x[i] - x[i - 1]));
+    check(jump < 1.5 * steady, String.format("ecualizador: cambio de preajuste sin clics (salto %.3f, normal %.3f)", jump, steady));
+  }
+
   public static void main(String[] args) {
     check(highPassDb(50) < -12, String.format("paso alto: 50 Hz atenuados (%.1f dB)", highPassDb(50)));
     check(Math.abs(highPassDb(1000)) < 0.5, String.format("paso alto: 1 kHz intacto (%.1f dB)", highPassDb(1000)));
@@ -237,6 +347,9 @@ public class DspTests {
     harshRoomTests();
     denoiseTests();
     shiftTests();
+    gateTests();
+    agcTests();
+    eqTests();
 
     if (failures > 0) {
       System.out.println(failures + " pruebas fallidas");

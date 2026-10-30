@@ -30,6 +30,8 @@ public class AudioEchoService extends Service {
   private static final String ACTION_VOLUME   = "com.github.warren_bank.echo.ACTION_VOLUME";
   public  static final String ACTION_SET_GAIN = "com.github.warren_bank.echo.ACTION_SET_GAIN";
   public  static final String ACTION_MUTE     = "com.github.warren_bank.echo.ACTION_MUTE";
+  public  static final String ACTION_RECORD_START = "com.github.warren_bank.echo.ACTION_RECORD_START";
+  public  static final String ACTION_RECORD_STOP  = "com.github.warren_bank.echo.ACTION_RECORD_STOP";
   private static final String EXTRA_VOLUME_UP = "EXTRA_VOLUME_UP";
   public  static final String EXTRA_GAIN      = "EXTRA_GAIN";
   public  static final String EXTRA_MUTED     = "EXTRA_MUTED";
@@ -49,6 +51,11 @@ public class AudioEchoService extends Service {
   public static final String PREF_DENOISE       = "DENOISE";
   public static final String PREF_SHIFT         = "FREQUENCY_SHIFT";
   public static final String PREF_BACKOFF       = "HOWL_BACKOFF";
+  public static final String PREF_EQ            = "EQ_PRESET";
+  public static final String PREF_GATE          = "NOISE_GATE";   // 0 off, 1 light, 2 strong
+  public static final String PREF_AGC           = "AUTO_GAIN";
+
+  private static final double[] GATE_THRESHOLDS_DB = {0.0, -55.0, -45.0};
 
   // 10 ms at 48 kHz: small blocks keep the delay down
   private static final int BLOCK_MS = 10;
@@ -71,6 +78,16 @@ public class AudioEchoService extends Service {
   public static volatile boolean shift        = false;
   public static volatile boolean backoff      = false;
   public static volatile double  backoffDb    = 0.0;
+  public static volatile int     eq           = 0;
+  public static volatile int     gate         = 0;
+  public static volatile boolean agc          = false;
+  // Recording of what goes out to the speaker
+  public static volatile boolean isRecording  = false;
+  public static volatile long    recordingElapsedMs = 0;
+  public static volatile String  lastRecording  = null;
+  public static volatile String  recordingError = null;
+  private static final WavRecorder recorder = new WavRecorder();
+  private static volatile int sessionSampleRate = DEFAULT_SAMPLE_RATE;
   // False when RNNoise cannot run here (library missing or not 48 kHz)
   public static volatile boolean denoiseUsable = true;
 
@@ -260,6 +277,12 @@ public class AudioEchoService extends Service {
       saveAudioGain();
       updateNotificationProgress();
     }
+    else if (action.equals(ACTION_RECORD_START)) {
+      startRecording();
+    }
+    else if (action.equals(ACTION_RECORD_STOP)) {
+      stopRecording();
+    }
     else if (action.equals(ACTION_SET_GAIN)) {
       float gain = intent.getFloatExtra(EXTRA_GAIN, audioGain);
       audioGain = Math.max(0.0f, Math.min(audioGainMax, gain));
@@ -288,6 +311,37 @@ public class AudioEchoService extends Service {
     denoise      = prefs.getBoolean(PREF_DENOISE, false);
     shift        = prefs.getBoolean(PREF_SHIFT, false);
     backoff      = prefs.getBoolean(PREF_BACKOFF, false);
+    eq           = prefs.getInt(PREF_EQ, 0);
+    gate         = prefs.getInt(PREF_GATE, 0);
+    agc          = prefs.getBoolean(PREF_AGC, false);
+  }
+
+  private void startRecording() {
+    if (session == null || recorder.isRecording()) return;
+    try {
+      recordingError = null;
+      lastRecording  = null;
+      recorder.start(getApplicationContext(), sessionSampleRate);
+      recordingElapsedMs = 0;
+      isRecording = true;
+    }
+    catch (Exception e) {
+      recordingError = e.getMessage();
+      isRecording = false;
+    }
+  }
+
+  // Finishing the file does I/O: keep it off the main and audio threads
+  private static void stopRecording() {
+    if (!recorder.isRecording()) return;
+    new Thread(() -> {
+      WavRecorder.Result result = recorder.stop();
+      if (result != null) {
+        recordingError = result.error;
+        lastRecording  = (result.path != null) ? result.path : (result.uri != null ? result.uri.toString() : null);
+      }
+      isRecording = false;
+    }).start();
   }
 
   private int getNativeSampleRate() {
@@ -315,6 +369,7 @@ public class AudioEchoService extends Service {
     backoffDb    = 0.0;
 
     final int sampleRate  = getNativeSampleRate();
+    sessionSampleRate = sampleRate;
     final int audioSource = getAudioSource();
     SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
     final boolean micDirection = prefs.getBoolean(PREF_MIC_DIRECTION, true);
@@ -396,10 +451,17 @@ public class AudioEchoService extends Service {
             chain.denoiseEnabled  = denoise;
             chain.shiftEnabled    = shift;
             chain.backoffEnabled  = backoff;
+            chain.eqPreset        = eq;
+            chain.gateThresholdDb = GATE_THRESHOLDS_DB[Math.max(0, Math.min(2, gate))];
+            chain.autoGainEnabled = agc;
             float gain = (isMuted || isBlocked) ? 0.0f : audioGain;
             inputLevel = chain.process(buffer, work, readSize, gain);
             feedbackCuts = chain.getFeedbackCuts();
             backoffDb    = chain.getBackoffDb();
+            if (isRecording) {
+              recorder.write(buffer, readSize);
+              recordingElapsedMs = recorder.getElapsedMs();
+            }
             audioTrack.write(buffer, 0, readSize);
           }
           else if (readSize < 0) {
@@ -412,6 +474,7 @@ public class AudioEchoService extends Service {
       }
       finally {
         if (noiseSuppressor != null) noiseSuppressor.release();
+        stopRecording();
         if (chain != null) chain.release();
         if (audioRecord != null) {
           try { audioRecord.stop(); } catch(Exception ignore) {}

@@ -3,7 +3,6 @@ package com.github.warren_bank.echo;
 import android.Manifest.permission;
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.app.LocaleManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -12,27 +11,19 @@ import android.content.res.ColorStateList;
 import android.media.AudioDeviceCallback;
 import android.media.AudioDeviceInfo;
 import android.media.AudioManager;
-import android.media.MediaRecorder;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.LocaleList;
 import android.os.Looper;
 import android.preference.PreferenceManager;
-import android.util.TypedValue;
-import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.WindowInsets;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.SeekBar;
-import android.widget.Spinner;
-import android.widget.Switch;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,24 +32,6 @@ public class MainActivity extends Activity {
   private static final int REQUEST_CODE_PERMISSIONS = 1;
   private static final String PREF_HOLD_MODE = "HOLD_MODE";
   private static final long UI_TICK_MS = 50;
-
-  private static final int[] SOURCES = {
-    MediaRecorder.AudioSource.MIC,
-    MediaRecorder.AudioSource.VOICE_PERFORMANCE,
-    MediaRecorder.AudioSource.UNPROCESSED,
-    MediaRecorder.AudioSource.VOICE_COMMUNICATION
-  };
-
-  private static final int[] SOURCE_LABELS = {
-    R.string.source_mic,
-    R.string.source_performance,
-    R.string.source_unprocessed,
-    R.string.source_communication
-  };
-
-  private interface OnSegmentSelected {
-    void onSelected(int index);
-  }
 
   private SharedPreferences prefs;
   private AudioManager audioManager;
@@ -71,18 +44,19 @@ public class MainActivity extends Activity {
   private MicButtonView micButton;
   private TextView statusLabel;
   private TextView hintLabel;
+  private LinearLayout recordButton;
+  private ImageView recordIcon;
+  private TextView recordLabel;
   private TextView gainValue;
   private SeekBar gainBar;
-  private LinearLayout advancedPanel;
-  private ImageView advancedArrow;
-  private TextView advancedInfo;
-  private Spinner sourceSpinner;
   private Button stopButton;
 
   private boolean holdMode;
   private boolean pendingStartMuted;
   private boolean hasPendingStart;
   private String statusOverride;
+  private String lastCategory;
+  private boolean wasRecording;
 
   private final AudioDeviceCallback deviceCallback = new AudioDeviceCallback() {
     @Override
@@ -116,56 +90,43 @@ public class MainActivity extends Activity {
     micButton      = findViewById(R.id.micButton);
     statusLabel    = findViewById(R.id.statusLabel);
     hintLabel      = findViewById(R.id.hintLabel);
+    recordButton   = findViewById(R.id.recordButton);
+    recordIcon     = findViewById(R.id.recordIcon);
+    recordLabel    = findViewById(R.id.recordLabel);
     gainValue      = findViewById(R.id.gainValue);
     gainBar        = findViewById(R.id.gainBar);
-    advancedPanel  = findViewById(R.id.advancedPanel);
-    advancedArrow  = findViewById(R.id.advancedArrow);
-    advancedInfo   = findViewById(R.id.advancedInfo);
-    sourceSpinner  = findViewById(R.id.sourceSpinner);
     stopButton     = findViewById(R.id.stopButton);
 
     int secondary = getColor(R.color.text_secondary);
     ((ImageView) findViewById(R.id.volumeIcon)).setImageTintList(ColorStateList.valueOf(secondary));
-    advancedArrow.setImageTintList(ColorStateList.valueOf(secondary));
+    ImageView settingsButton = findViewById(R.id.settingsButton);
+    settingsButton.setImageTintList(ColorStateList.valueOf(getColor(R.color.text_primary)));
+    settingsButton.setOnClickListener(v -> startActivity(new Intent(this, SettingsActivity.class)));
 
     migrateSettings();
     AudioEchoService.loadSettings(this);
-    applySystemBarInsets();
+    Ui.applySystemBarInsets(findViewById(R.id.content));
 
     holdMode = prefs.getBoolean(PREF_HOLD_MODE, false);
-    setupSegment(R.id.modeSegment, new int[]{R.string.mode_toggle, R.string.mode_hold},
+    Ui.setupSegment(this, R.id.modeSegment, new int[]{R.string.mode_toggle, R.string.mode_hold},
       holdMode ? 1 : 0, index -> setHoldMode(index == 1));
-    setupSegment(R.id.noiseSegment, new int[]{R.string.level_off, R.string.level_light, R.string.level_strong},
-      currentNoiseLevel(), this::setNoiseLevel);
-    setupSegment(R.id.howlSegment, new int[]{R.string.level_off, R.string.level_normal, R.string.level_strong},
-      currentHowlLevel(), this::setHowlLevel);
 
-    setupGain();
-    setupSource();
+    setupSoundControls();
     applyButtonMode();
 
-    bindSwitch(R.id.guardSwitch,    AudioEchoService.PREF_GUARD_SPEAKER, true, false);
-    bindSwitch(R.id.highPassSwitch, AudioEchoService.PREF_HIGH_PASS,     true, false);
-    bindSwitch(R.id.limiterSwitch,  AudioEchoService.PREF_LIMITER,       true, false);
-    bindSwitch(R.id.micDirSwitch,   AudioEchoService.PREF_MIC_DIRECTION, true, true);
-    bindSwitch(R.id.shiftSwitch,    AudioEchoService.PREF_SHIFT,         false, false);
-    setupLanguage();
-
-    findViewById(R.id.advancedHeader).setOnClickListener(v -> {
-      boolean open = advancedPanel.getVisibility() != View.VISIBLE;
-      advancedPanel.setVisibility(open ? View.VISIBLE : View.GONE);
-      advancedArrow.animate().rotation(open ? 180f : 0f).setDuration(150).start();
-    });
-
+    recordButton.setOnClickListener(v -> toggleRecording());
     stopButton.setOnClickListener(v -> stopEcho());
-    findViewById(R.id.dacButton).setOnClickListener(v -> showDacCheck());
 
+    lastCategory = OutputProfiles.categoryOf(currentOutput());
     updateUi();
   }
 
   @Override
   protected void onResume() {
     super.onResume();
+    // Settings may have changed while away
+    AudioEchoService.loadSettings(this);
+    refreshSoundControls();
     audioManager.registerAudioDeviceCallback(deviceCallback, handler);
     handler.post(uiTick);
   }
@@ -181,29 +142,71 @@ public class MainActivity extends Activity {
       setMuted(true);
   }
 
-  // ---------------------------------------------------------------------------
-  // Segmented controls
+  // Up to 2.1 "Strong" meant the 5 Hz shift; it now means level back-off,
+  // and the shift is a separate (experimental) switch.
+  private void migrateSettings() {
+    if (prefs.contains(AudioEchoService.PREF_BACKOFF)) return;
+    boolean wasStrong = prefs.getBoolean(AudioEchoService.PREF_SHIFT, false);
+    prefs.edit()
+      .putBoolean(AudioEchoService.PREF_BACKOFF, wasStrong)
+      .putBoolean(AudioEchoService.PREF_SHIFT, false)
+      .apply();
+  }
 
-  private void setupSegment(int containerId, int[] labels, int selected, OnSegmentSelected listener) {
-    LinearLayout container = findViewById(containerId);
-    container.removeAllViews();
-    for (int i = 0; i < labels.length; i++) {
-      TextView item = new TextView(this);
-      item.setText(labels[i]);
-      item.setGravity(Gravity.CENTER);
-      item.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
-      item.setTextColor(getColorStateList(R.color.seg_text));
-      item.setBackgroundResource(R.drawable.seg_item);
-      item.setSelected(i == selected);
-      item.setClickable(true);
-      final int index = i;
-      item.setOnClickListener(v -> {
-        for (int k = 0; k < container.getChildCount(); k++)
-          container.getChildAt(k).setSelected(k == index);
-        listener.onSelected(index);
-      });
-      container.addView(item, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1));
+  // ---------------------------------------------------------------------------
+  // Sound controls (volume, voice, noise, howl)
+
+  private void setupSoundControls() {
+    gainBar.setMax(Math.round(AudioEchoService.audioGainMax * 100.0f));
+    gainBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+      @Override
+      public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+        gainValue.setText(progress + " %");
+        if (fromUser) applyGain(progress / 100.0f);
+      }
+
+      @Override public void onStartTrackingTouch(SeekBar seekBar) {}
+      @Override public void onStopTrackingTouch(SeekBar seekBar) {
+        saveProfile();
+      }
+    });
+
+    Ui.setupSegment(this, R.id.eqSegment, new int[]{R.string.eq_natural, R.string.eq_clear, R.string.eq_small},
+      currentEq(), this::setEq);
+    Ui.setupSegment(this, R.id.noiseSegment, new int[]{R.string.level_off, R.string.level_light, R.string.level_strong},
+      currentNoiseLevel(), this::setNoiseLevel);
+    Ui.setupSegment(this, R.id.howlSegment, new int[]{R.string.level_off, R.string.level_normal, R.string.level_strong},
+      currentHowlLevel(), this::setHowlLevel);
+    refreshSoundControls();
+  }
+
+  private void refreshSoundControls() {
+    int percent = Math.round(prefs.getFloat(AudioEchoService.PREF_AUDIO_GAIN, 1.0f) * 100.0f);
+    gainBar.setProgress(percent);
+    gainValue.setText(percent + " %");
+    Ui.selectSegment(this, R.id.eqSegment, currentEq());
+    Ui.selectSegment(this, R.id.noiseSegment, currentNoiseLevel());
+    Ui.selectSegment(this, R.id.howlSegment, currentHowlLevel());
+  }
+
+  private void applyGain(float gain) {
+    if (AudioEchoService.isActive) {
+      Intent intent = serviceIntent(AudioEchoService.ACTION_SET_GAIN);
+      intent.putExtra(AudioEchoService.EXTRA_GAIN, gain);
+      startService(intent);
     }
+    // The service saves it too; writing here keeps profiles in sync right away
+    prefs.edit().putFloat(AudioEchoService.PREF_AUDIO_GAIN, gain).apply();
+  }
+
+  private int currentEq() {
+    return prefs.getInt(AudioEchoService.PREF_EQ, 0);
+  }
+
+  private void setEq(int preset) {
+    prefs.edit().putInt(AudioEchoService.PREF_EQ, preset).apply();
+    AudioEchoService.loadSettings(this);
+    saveProfile();
   }
 
   // Background noise: 0 off, 1 the phone's own suppressor, 2 RNNoise
@@ -222,6 +225,7 @@ public class MainActivity extends Activity {
     AudioEchoService.loadSettings(this);
     // The phone's suppressor is attached when the microphone opens
     if (systemNsBefore != (level == 1)) restartIfActive();
+    saveProfile();
     updateUi();
   }
 
@@ -237,141 +241,94 @@ public class MainActivity extends Activity {
       .putBoolean(AudioEchoService.PREF_BACKOFF,  level == 2)
       .apply();
     AudioEchoService.loadSettings(this);
+    saveProfile();
     updateUi();
   }
 
-  // Up to 2.1 "Strong" meant the 5 Hz shift; it now means level back-off,
-  // and the shift is a separate (experimental) switch.
-  private void migrateSettings() {
-    if (prefs.contains(AudioEchoService.PREF_BACKOFF)) return;
-    boolean wasStrong = prefs.getBoolean(AudioEchoService.PREF_SHIFT, false);
-    prefs.edit()
-      .putBoolean(AudioEchoService.PREF_BACKOFF, wasStrong)
-      .putBoolean(AudioEchoService.PREF_SHIFT, false)
-      .apply();
+  // ---------------------------------------------------------------------------
+  // Per-output profiles
+
+  private boolean perOutput() {
+    return prefs.getBoolean(OutputProfiles.PREF_PER_OUTPUT, true);
   }
 
-  // targetSdk 35 draws behind the status and navigation bars: pad the content
-  private void applySystemBarInsets() {
-    View content = findViewById(R.id.content);
-    final int left = content.getPaddingLeft(), top = content.getPaddingTop();
-    final int right = content.getPaddingRight(), bottom = content.getPaddingBottom();
-    content.setOnApplyWindowInsetsListener((v, insets) -> {
-      int insetTop, insetBottom;
-      if (Build.VERSION.SDK_INT >= 30) {
-        android.graphics.Insets bars = insets.getInsets(WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout());
-        insetTop = bars.top;
-        insetBottom = bars.bottom;
-      }
-      else {
-        insetTop = insets.getSystemWindowInsetTop();
-        insetBottom = insets.getSystemWindowInsetBottom();
-      }
-      v.setPadding(left, top + insetTop, right, bottom + insetBottom);
-      return insets;
-    });
-    content.requestApplyInsets();
+  private void saveProfile() {
+    if (perOutput()) OutputProfiles.save(prefs, OutputProfiles.categoryOf(currentOutput()));
   }
 
-  // Per-app language (Android 13+): the same choice as in the system settings
-  private void setupLanguage() {
-    View row = findViewById(R.id.languageRow);
-    if (Build.VERSION.SDK_INT < 33) {
-      row.setVisibility(View.GONE);
+  private void onOutputMaybeChanged() {
+    String category = OutputProfiles.categoryOf(currentOutput());
+    if (category == null || category.equals(lastCategory)) {
+      if (category != null) lastCategory = category;
       return;
     }
-    LocaleManager localeManager = getSystemService(LocaleManager.class);
-    String[] tags = {"", "es", "en"};
-    LocaleList current = localeManager.getApplicationLocales();
-    int selected = 0;
-    if (!current.isEmpty()) {
-      String language = current.get(0).getLanguage();
-      for (int i = 1; i < tags.length; i++)
-        if (tags[i].equals(language)) selected = i;
+    lastCategory = category;
+    if (!perOutput()) return;
+
+    boolean systemNsBefore = prefs.getBoolean(AudioEchoService.PREF_SYSTEM_NS, false);
+    if (OutputProfiles.load(prefs, category)) {
+      AudioEchoService.loadSettings(this);
+      refreshSoundControls();
+      applyGain(prefs.getFloat(AudioEchoService.PREF_AUDIO_GAIN, 1.0f));
+      if (systemNsBefore != prefs.getBoolean(AudioEchoService.PREF_SYSTEM_NS, false)) restartIfActive();
     }
-    setupSegment(R.id.languageSegment, new int[]{R.string.language_system, R.string.language_es, R.string.language_en},
-      selected, index -> localeManager.setApplicationLocales(
-        index == 0 ? LocaleList.getEmptyLocaleList() : LocaleList.forLanguageTags(tags[index])));
+    else {
+      // First time on this output: start from the current settings
+      OutputProfiles.save(prefs, category);
+    }
   }
 
   // ---------------------------------------------------------------------------
-  // Controls
+  // Recording
 
-  private void setupGain() {
-    int percent = Math.round(prefs.getFloat(AudioEchoService.PREF_AUDIO_GAIN, 1.0f) * 100.0f);
-    gainBar.setMax(Math.round(AudioEchoService.audioGainMax * 100.0f));
-    gainBar.setProgress(percent);
-    gainValue.setText(percent + " %");
-
-    gainBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-      @Override
-      public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-        gainValue.setText(progress + " %");
-        if (!fromUser) return;
-
-        float gain = progress / 100.0f;
-        if (AudioEchoService.isActive) {
-          Intent intent = serviceIntent(AudioEchoService.ACTION_SET_GAIN);
-          intent.putExtra(AudioEchoService.EXTRA_GAIN, gain);
-          startService(intent);
-        }
-        else {
-          prefs.edit().putFloat(AudioEchoService.PREF_AUDIO_GAIN, gain).apply();
-        }
-      }
-
-      @Override public void onStartTrackingTouch(SeekBar seekBar) {}
-      @Override public void onStopTrackingTouch(SeekBar seekBar) {}
-    });
-  }
-
-  private void setupSource() {
-    List<String> labels = new ArrayList<>();
-    for (int label : SOURCE_LABELS)
-      labels.add(getString(label));
-
-    ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, labels);
-    adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-    sourceSpinner.setAdapter(adapter);
-
-    int current = prefs.getInt(AudioEchoService.PREF_AUDIO_SOURCE, MediaRecorder.AudioSource.MIC);
-    for (int i = 0; i < SOURCES.length; i++) {
-      if (SOURCES[i] == current) sourceSpinner.setSelection(i, false);
+  private void toggleRecording() {
+    if (AudioEchoService.isRecording) {
+      startService(serviceIntent(AudioEchoService.ACTION_RECORD_STOP));
     }
-
-    sourceSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-      @Override
-      public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-        int source = SOURCES[position];
-        if (source == prefs.getInt(AudioEchoService.PREF_AUDIO_SOURCE, MediaRecorder.AudioSource.MIC)) return;
-
-        prefs.edit().putInt(AudioEchoService.PREF_AUDIO_SOURCE, source).apply();
-
-        // The source is read when the audio thread starts: restart it
-        restartIfActive();
-      }
-
-      @Override public void onNothingSelected(AdapterView<?> parent) {}
-    });
+    else if (!AudioEchoService.isActive) {
+      Toast.makeText(this, R.string.recording_needs_mic, Toast.LENGTH_SHORT).show();
+    }
+    else {
+      startService(serviceIntent(AudioEchoService.ACTION_RECORD_START));
+    }
   }
+
+  private void updateRecordButton() {
+    boolean recording = AudioEchoService.isRecording;
+    if (recording) {
+      long seconds = AudioEchoService.recordingElapsedMs / 1000;
+      recordLabel.setText(getString(R.string.recording_elapsed, String.format("%d:%02d", seconds / 60, seconds % 60)));
+      recordIcon.setImageResource(R.drawable.ic_stop);
+    }
+    else {
+      recordLabel.setText(R.string.record);
+      recordIcon.setImageResource(R.drawable.ic_record);
+    }
+    recordButton.setBackgroundResource(recording ? R.drawable.pill_recording : R.drawable.pill_outline);
+    recordIcon.setImageTintList(ColorStateList.valueOf(getColor(recording ? R.color.on_warning_container : R.color.warning)));
+    recordLabel.setTextColor(getColor(recording ? R.color.on_warning_container : R.color.text_primary));
+    recordButton.setAlpha(AudioEchoService.isActive || recording ? 1.0f : 0.5f);
+
+    // Tell where the file went once a recording ends
+    if (wasRecording && !recording) {
+      String error = AudioEchoService.recordingError;
+      String saved = AudioEchoService.lastRecording;
+      if (error != null)
+        Toast.makeText(this, getString(R.string.recording_failed, error), Toast.LENGTH_LONG).show();
+      else if (saved != null)
+        Toast.makeText(this, getString(R.string.recording_saved, saved), Toast.LENGTH_LONG).show();
+    }
+    wasRecording = recording;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Mode and service
 
   private void restartIfActive() {
     if (!AudioEchoService.isActive) return;
     boolean muted = AudioEchoService.isMuted;
     stopEcho();
     handler.postDelayed(() -> startEcho(muted), 300);
-  }
-
-  // restart: the setting is only read when the audio thread starts
-  private void bindSwitch(int id, String pref, boolean byDefault, boolean restart) {
-    Switch view = findViewById(id);
-    view.setChecked(prefs.getBoolean(pref, byDefault));
-    view.setOnCheckedChangeListener((button, checked) -> {
-      prefs.edit().putBoolean(pref, checked).apply();
-      AudioEchoService.loadSettings(this);
-      if (restart) restartIfActive();
-      updateUi();
-    });
   }
 
   private void setHoldMode(boolean hold) {
@@ -417,9 +374,6 @@ public class MainActivity extends Activity {
       });
     }
   }
-
-  // ---------------------------------------------------------------------------
-  // Service
 
   private Intent serviceIntent(String action) {
     Intent intent = new Intent(getApplicationContext(), AudioEchoService.class);
@@ -499,7 +453,7 @@ public class MainActivity extends Activity {
   // ---------------------------------------------------------------------------
   // Output detection
 
-  private static boolean isBluetooth(int type) {
+  static boolean isBluetooth(int type) {
     return type == AudioDeviceInfo.TYPE_BLUETOOTH_A2DP
         || type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO
         || type == AudioDeviceInfo.TYPE_BLE_HEADSET
@@ -508,7 +462,7 @@ public class MainActivity extends Activity {
         || type == AudioDeviceInfo.TYPE_HEARING_AID;
   }
 
-  private static boolean isWired(int type) {
+  static boolean isWired(int type) {
     return type == AudioDeviceInfo.TYPE_WIRED_HEADSET
         || type == AudioDeviceInfo.TYPE_WIRED_HEADPHONES
         || type == AudioDeviceInfo.TYPE_USB_HEADSET
@@ -519,52 +473,11 @@ public class MainActivity extends Activity {
         || type == AudioDeviceInfo.TYPE_AUX_LINE;
   }
 
-  // Android only lists USB audio devices that have their own DAC; a passive
-  // USB-C to jack adapter shows up as an analog headset, or not at all on
-  // phones without analog audio over USB-C.
-  private static boolean isUsbDac(int type) {
+  // Android only lists USB audio devices that have their own DAC
+  static boolean isUsbDac(int type) {
     return type == AudioDeviceInfo.TYPE_USB_HEADSET
         || type == AudioDeviceInfo.TYPE_USB_DEVICE
         || type == AudioDeviceInfo.TYPE_USB_ACCESSORY;
-  }
-
-  private void showDacCheck() {
-    AudioDeviceInfo usb = null, analog = null;
-    for (AudioDeviceInfo device : audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS)) {
-      int type = device.getType();
-      if (isUsbDac(type) && usb == null) usb = device;
-      else if (isWired(type) && analog == null) analog = device;
-    }
-
-    String message;
-    if (usb != null) {
-      int[] rates = usb.getSampleRates();
-      StringBuilder list = new StringBuilder();
-      for (int rate : rates) {
-        if (list.length() > 0) list.append(", ");
-        list.append(rate / 1000.0).append(" kHz");
-      }
-      String rateText = (list.length() > 0) ? list.toString() : getString(R.string.dac_unknown_rates);
-      message = getString(R.string.dac_usb, deviceName(usb), rateText);
-    }
-    else if (analog != null) {
-      message = getString(R.string.dac_analog, deviceName(analog));
-    }
-    else {
-      message = getString(R.string.dac_none);
-    }
-
-    new AlertDialog.Builder(this)
-      .setTitle(R.string.dac_title)
-      .setMessage(message)
-      .setPositiveButton(android.R.string.ok, null)
-      .show();
-  }
-
-  private String deviceName(AudioDeviceInfo device) {
-    CharSequence name = device.getProductName();
-    String text = (name == null) ? "" : name.toString().trim();
-    return text.isEmpty() ? getString(R.string.output_wired_generic) : text;
   }
 
   private static boolean isOnPhoneSpeaker(AudioDeviceInfo device) {
@@ -653,7 +566,9 @@ public class MainActivity extends Activity {
     boolean blocked = active && AudioEchoService.isBlocked;
     boolean live    = active && !AudioEchoService.isMuted && !blocked;
 
+    onOutputMaybeChanged();
     updateOutputCard();
+    updateRecordButton();
 
     String idleHint = getString(holdMode ? R.string.hint_hold : R.string.hint_toggle);
     String status, hint;
@@ -699,11 +614,6 @@ public class MainActivity extends Activity {
     hintLabel.setText(hint);
     micButton.setState(state);
     micButton.setLevel(live ? AudioEchoService.inputLevel : 0.0f);
-
-    String info = getString(R.string.advanced_info);
-    if (AudioEchoService.denoise && !AudioEchoService.denoiseUsable)
-      info += "\n\n" + getString(R.string.denoise_unavailable);
-    advancedInfo.setText(info);
 
     stopButton.setVisibility(active && holdMode ? View.VISIBLE : View.GONE);
   }

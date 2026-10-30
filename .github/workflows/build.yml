@@ -41,6 +41,7 @@ jobs:
           javac -d "$RUNNER_TEMP/dsp" android-studio-project/Echo/src/main/java/com/github/warren_bank/echo/dsp/*.java dsp-tests/*.java
           java -ea -Djava.library.path="$RUNNER_TEMP" -cp "$RUNNER_TEMP/dsp" DspTests | tee "$RUNNER_TEMP/dsp.log"
           ! grep -q "^--" "$RUNNER_TEMP/dsp.log"
+          java -ea -cp "$RUNNER_TEMP/dsp" ProbeTests
 
       - name: Version
         id: version

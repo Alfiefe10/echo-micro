@@ -13,6 +13,10 @@ public final class AudioChain {
   public volatile boolean shiftEnabled    = false;
   // Strong howl protection: also turn the whole level down while howls keep coming
   public volatile boolean backoffEnabled  = false;
+  // 0 off, otherwise the gate threshold in dBFS
+  public volatile double  gateThresholdDb = 0.0;
+  public volatile boolean autoGainEnabled = false;
+  public volatile int     eqPreset        = Equalizer.FLAT;
 
   private static final double BACKOFF_STEP_DB    = -3.0;
   private static final double BACKOFF_MAX_DB     = -12.0;
@@ -24,6 +28,9 @@ public final class AudioChain {
   private final FeedbackSuppressor feedback;
   private final RnNoise denoise;
   private final FrequencyShifter shifter;
+  private final NoiseGate noiseGate;
+  private final AutoGain autoGain;
+  private final Equalizer equalizer;
   private final int sampleRate;
   private int lastHowlEvents = 0;
   private double backoffDb = 0.0;
@@ -37,8 +44,23 @@ public final class AudioChain {
     limiter = new Limiter(sampleRate, 0.89f, 150.0);  // -1 dBFS
     feedback = new FeedbackSuppressor(sampleRate);
     shifter  = new FrequencyShifter(sampleRate, SHIFT_HZ);
+    noiseGate = new NoiseGate(sampleRate);
+    autoGain  = new AutoGain(sampleRate);
+    equalizer = new Equalizer(sampleRate);
     denoiseUsable = (sampleRate == 48000) && RnNoise.isAvailable();
     denoise = denoiseUsable ? new RnNoise() : null;
+  }
+
+  // Without the gate: voice if the block is above the default gate threshold
+  private static boolean detectVoice(float[] buf, int n) {
+    double sum = 0;
+    for (int i = 0; i < n; i++) sum += buf[i] * buf[i];
+    double db = 10 * Math.log10(sum / n + 1e-12);
+    return db > NoiseGate.DEFAULT_THRESHOLD_DB;
+  }
+
+  public double getAutoGainDb() {
+    return autoGain.getGainDb();
   }
 
   private void updateBackoff(int n) {
@@ -93,6 +115,22 @@ public final class AudioChain {
 
     // RNNoise needs exact 10 ms frames at 48 kHz; otherwise it is skipped
     if (denoiseEnabled && denoiseUsable && n == RnNoise.FRAME_SIZE) denoise.process(work);
+
+    // The gate also tells the automatic volume when someone is speaking
+    double threshold = gateThresholdDb;
+    boolean gateOn = threshold < 0.0;
+    if (gateOn) {
+      noiseGate.setThresholdDb(threshold);
+      noiseGate.process(work, n);
+    }
+    if (autoGainEnabled) {
+      if (!gateOn) noiseGate.setThresholdDb(NoiseGate.DEFAULT_THRESHOLD_DB);
+      boolean voice = gateOn ? noiseGate.isOpen() : detectVoice(work, n);
+      autoGain.process(work, n, voice);
+    }
+
+    if (equalizer.getPreset() != eqPreset) equalizer.setPreset(eqPreset);
+    equalizer.process(work, n);
 
     float backoff = (float) Math.pow(10, backoffDb / 20);
     for (int i = 0; i < n; i++) work[i] *= gain * backoff;

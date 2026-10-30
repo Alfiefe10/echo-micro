@@ -33,6 +33,12 @@
       </intent-filter>
     </activity>
 
+    <activity
+      android:name=".SettingsActivity"
+      android:configChanges="keyboard|keyboardHidden|orientation|screenSize|screenLayout|smallestScreenSize"
+      android:parentActivityName=".MainActivity"
+      android:exported="false" />
+
     <!-- Starts the service without showing the main screen (shortcuts, automation) -->
     <activity
       android:name=".StartAudioEchoServiceActivity"

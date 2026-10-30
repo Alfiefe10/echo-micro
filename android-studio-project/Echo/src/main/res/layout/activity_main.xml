@@ -10,15 +10,44 @@
     android:layout_height="wrap_content"
     android:orientation="vertical"
     android:paddingLeft="20dp"
-    android:paddingTop="20dp"
+    android:paddingTop="8dp"
     android:paddingRight="20dp"
-    android:paddingBottom="24dp">
+    android:paddingBottom="20dp">
+
+    <!-- Header -->
+    <LinearLayout
+      android:layout_width="match_parent"
+      android:layout_height="56dp"
+      android:gravity="center_vertical"
+      android:orientation="horizontal">
+
+      <TextView
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="@string/app_name"
+        android:textColor="@color/text_primary"
+        android:textSize="22sp"
+        android:textStyle="bold" />
+
+      <ImageView
+        android:id="@+id/settingsButton"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:background="?android:attr/selectableItemBackgroundBorderless"
+        android:clickable="true"
+        android:contentDescription="@string/settings"
+        android:focusable="true"
+        android:padding="12dp"
+        android:src="@drawable/ic_settings" />
+    </LinearLayout>
 
     <!-- Output card -->
     <LinearLayout
       android:id="@+id/outputCard"
       android:layout_width="match_parent"
       android:layout_height="wrap_content"
+      android:layout_marginTop="4dp"
       android:background="@drawable/card_bg"
       android:gravity="center_vertical"
       android:orientation="horizontal"
@@ -60,12 +89,12 @@
       android:layout_width="match_parent"
       android:layout_height="0dp"
       android:layout_weight="1"
-      android:minHeight="16dp" />
+      android:minHeight="12dp" />
 
     <com.github.warren_bank.echo.MicButtonView
       android:id="@+id/micButton"
-      android:layout_width="260dp"
-      android:layout_height="260dp"
+      android:layout_width="240dp"
+      android:layout_height="240dp"
       android:layout_gravity="center_horizontal"
       android:contentDescription="@string/app_name" />
 
@@ -73,7 +102,7 @@
       android:id="@+id/statusLabel"
       android:layout_width="match_parent"
       android:layout_height="wrap_content"
-      android:layout_marginTop="8dp"
+      android:layout_marginTop="4dp"
       android:gravity="center"
       android:textColor="@color/text_primary"
       android:textSize="22sp"
@@ -88,11 +117,42 @@
       android:textColor="@color/text_secondary"
       android:textSize="15sp" />
 
+    <LinearLayout
+      android:id="@+id/recordButton"
+      android:layout_width="wrap_content"
+      android:layout_height="40dp"
+      android:layout_gravity="center_horizontal"
+      android:layout_marginTop="12dp"
+      android:background="@drawable/pill_outline"
+      android:clickable="true"
+      android:focusable="true"
+      android:gravity="center_vertical"
+      android:orientation="horizontal"
+      android:paddingLeft="14dp"
+      android:paddingRight="18dp">
+
+      <ImageView
+        android:id="@+id/recordIcon"
+        android:layout_width="18dp"
+        android:layout_height="18dp"
+        android:importantForAccessibility="no"
+        android:src="@drawable/ic_record" />
+
+      <TextView
+        android:id="@+id/recordLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="8dp"
+        android:text="@string/record"
+        android:textColor="@color/text_primary"
+        android:textSize="15sp" />
+    </LinearLayout>
+
     <Space
       android:layout_width="match_parent"
       android:layout_height="0dp"
       android:layout_weight="1"
-      android:minHeight="16dp" />
+      android:minHeight="12dp" />
 
     <!-- Main controls -->
     <LinearLayout
@@ -151,6 +211,23 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
+        android:text="@string/voice_title"
+        android:textColor="@color/text_primary"
+        android:textSize="16sp" />
+
+      <LinearLayout
+        android:id="@+id/eqSegment"
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:layout_marginTop="8dp"
+        android:background="@drawable/seg_container"
+        android:orientation="horizontal"
+        android:padding="4dp" />
+
+      <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
         android:text="@string/noise_title"
         android:textColor="@color/text_primary"
         android:textSize="16sp" />
@@ -180,144 +257,6 @@
         android:background="@drawable/seg_container"
         android:orientation="horizontal"
         android:padding="4dp" />
-    </LinearLayout>
-
-    <!-- Advanced -->
-    <LinearLayout
-      android:id="@+id/advancedHeader"
-      android:layout_width="match_parent"
-      android:layout_height="48dp"
-      android:layout_marginTop="8dp"
-      android:background="?android:attr/selectableItemBackground"
-      android:clickable="true"
-      android:focusable="true"
-      android:gravity="center_vertical"
-      android:orientation="horizontal"
-      android:paddingLeft="4dp"
-      android:paddingRight="4dp">
-
-      <TextView
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:text="@string/advanced"
-        android:textColor="@color/text_secondary"
-        android:textSize="15sp" />
-
-      <ImageView
-        android:id="@+id/advancedArrow"
-        android:layout_width="24dp"
-        android:layout_height="24dp"
-        android:importantForAccessibility="no"
-        android:src="@drawable/ic_expand" />
-    </LinearLayout>
-
-    <LinearLayout
-      android:id="@+id/advancedPanel"
-      android:layout_width="match_parent"
-      android:layout_height="wrap_content"
-      android:background="@drawable/card_bg"
-      android:orientation="vertical"
-      android:padding="16dp"
-      android:visibility="gone">
-
-      <Switch
-        android:id="@+id/guardSwitch"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/guard_speaker"
-        android:textColor="@color/text_primary"
-        android:textSize="15sp" />
-
-      <Switch
-        android:id="@+id/highPassSwitch"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="14dp"
-        android:text="@string/high_pass"
-        android:textColor="@color/text_primary"
-        android:textSize="15sp" />
-
-      <Switch
-        android:id="@+id/limiterSwitch"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="14dp"
-        android:text="@string/limiter"
-        android:textColor="@color/text_primary"
-        android:textSize="15sp" />
-
-      <Switch
-        android:id="@+id/micDirSwitch"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="14dp"
-        android:text="@string/mic_direction"
-        android:textColor="@color/text_primary"
-        android:textSize="15sp" />
-
-      <Switch
-        android:id="@+id/shiftSwitch"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="14dp"
-        android:text="@string/shift"
-        android:textColor="@color/text_primary"
-        android:textSize="15sp" />
-
-      <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="18dp"
-        android:text="@string/source"
-        android:textColor="@color/text_primary"
-        android:textSize="15sp" />
-
-      <Spinner
-        android:id="@+id/sourceSpinner"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="4dp" />
-
-      <LinearLayout
-        android:id="@+id/languageRow"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="18dp"
-        android:orientation="vertical">
-
-        <TextView
-          android:layout_width="match_parent"
-          android:layout_height="wrap_content"
-          android:text="@string/language"
-          android:textColor="@color/text_primary"
-          android:textSize="15sp" />
-
-        <LinearLayout
-          android:id="@+id/languageSegment"
-          android:layout_width="match_parent"
-          android:layout_height="44dp"
-          android:layout_marginTop="8dp"
-          android:background="@drawable/seg_container"
-          android:orientation="horizontal"
-          android:padding="4dp" />
-      </LinearLayout>
-
-      <Button
-        android:id="@+id/dacButton"
-        style="@android:style/Widget.Material.Button.Borderless.Colored"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:text="@string/dac_check" />
-
-      <TextView
-        android:id="@+id/advancedInfo"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="14dp"
-        android:textColor="@color/text_secondary"
-        android:textSize="13sp" />
     </LinearLayout>
 
     <Button

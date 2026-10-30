@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+  android:layout_width="match_parent"
+  android:layout_height="match_parent">
+
+  <LinearLayout
+    android:id="@+id/content"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingLeft="20dp"
+    android:paddingTop="8dp"
+    android:paddingRight="20dp"
+    android:paddingBottom="24dp">
+
+    <!-- Header -->
+    <LinearLayout
+      android:layout_width="match_parent"
+      android:layout_height="56dp"
+      android:gravity="center_vertical"
+      android:orientation="horizontal">
+
+      <ImageView
+        android:id="@+id/backButton"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_marginLeft="-12dp"
+        android:background="?android:attr/selectableItemBackgroundBorderless"
+        android:clickable="true"
+        android:contentDescription="@string/back"
+        android:focusable="true"
+        android:padding="12dp"
+        android:src="@drawable/ic_back" />
+
+      <TextView
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="4dp"
+        android:layout_weight="1"
+        android:text="@string/settings"
+        android:textColor="@color/text_primary"
+        android:textSize="22sp"
+        android:textStyle="bold" />
+    </LinearLayout>
+
+    <!-- Output -->
+    <TextView style="@style/SectionTitle" android:text="@string/section_output" />
+
+    <LinearLayout style="@style/SettingsCard">
+
+      <Switch
+        android:id="@+id/guardSwitch"
+        style="@style/SettingSwitch"
+        android:text="@string/guard_speaker" />
+
+      <Switch
+        android:id="@+id/perOutputSwitch"
+        style="@style/SettingSwitch"
+        android:text="@string/per_output" />
+
+      <LinearLayout
+        android:id="@+id/latencyRow"
+        style="@style/SettingRow">
+
+        <TextView style="@style/SettingLabel" android:text="@string/latency_test" />
+
+        <TextView
+          android:id="@+id/latencyHint"
+          style="@style/SettingHint"
+          android:text="@string/latency_test_hint" />
+      </LinearLayout>
+
+      <LinearLayout
+        android:id="@+id/dacRow"
+        style="@style/SettingRow">
+
+        <TextView style="@style/SettingLabel" android:text="@string/dac_check" />
+
+        <TextView style="@style/SettingHint" android:text="@string/dac_check_hint" />
+      </LinearLayout>
+    </LinearLayout>
+
+    <!-- Microphone -->
+    <TextView style="@style/SectionTitle" android:text="@string/section_mic" />
+
+    <LinearLayout style="@style/SettingsCard">
+
+      <TextView
+        style="@style/SettingLabel"
+        android:layout_marginTop="10dp"
+        android:text="@string/source" />
+
+      <Spinner
+        android:id="@+id/sourceSpinner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp" />
+
+      <Switch
+        android:id="@+id/micDirSwitch"
+        style="@style/SettingSwitch"
+        android:text="@string/mic_direction" />
+
+      <TextView
+        style="@style/SettingLabel"
+        android:layout_marginTop="6dp"
+        android:text="@string/gate" />
+
+      <TextView style="@style/SettingHint" android:text="@string/gate_hint" />
+
+      <LinearLayout
+        android:id="@+id/gateSegment"
+        style="@style/SettingSegment" />
+    </LinearLayout>
+
+    <!-- Processing -->
+    <TextView style="@style/SectionTitle" android:text="@string/section_processing" />
+
+    <LinearLayout style="@style/SettingsCard">
+
+      <Switch
+        android:id="@+id/highPassSwitch"
+        style="@style/SettingSwitch"
+        android:text="@string/high_pass" />
+
+      <Switch
+        android:id="@+id/limiterSwitch"
+        style="@style/SettingSwitch"
+        android:text="@string/limiter" />
+
+      <TextView
+        style="@style/SettingHint"
+        android:layout_marginBottom="10dp"
+        android:text="@string/advanced_info" />
+    </LinearLayout>
+
+    <!-- Experimental -->
+    <TextView style="@style/SectionTitle" android:text="@string/section_experimental" />
+
+    <LinearLayout style="@style/SettingsCard">
+
+      <Switch
+        android:id="@+id/agcSwitch"
+        style="@style/SettingSwitch"
+        android:text="@string/agc" />
+
+      <TextView style="@style/SettingHint" android:text="@string/agc_hint" />
+
+      <Switch
+        android:id="@+id/shiftSwitch"
+        style="@style/SettingSwitch"
+        android:text="@string/shift" />
+    </LinearLayout>
+
+    <!-- Recording -->
+    <TextView style="@style/SectionTitle" android:text="@string/section_recording" />
+
+    <LinearLayout style="@style/SettingsCard">
+
+      <TextView
+        style="@style/SettingHint"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="10dp"
+        android:text="@string/recording_hint" />
+    </LinearLayout>
+
+    <!-- Language -->
+    <LinearLayout
+      android:id="@+id/languageSection"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:orientation="vertical">
+
+      <TextView style="@style/SectionTitle" android:text="@string/language" />
+
+      <LinearLayout style="@style/SettingsCard">
+
+        <LinearLayout
+          android:id="@+id/languageSegment"
+          style="@style/SettingSegment" />
+      </LinearLayout>
+    </LinearLayout>
+
+    <!-- About -->
+    <TextView style="@style/SectionTitle" android:text="@string/section_about" />
+
+    <LinearLayout style="@style/SettingsCard">
+
+      <LinearLayout
+        android:id="@+id/aboutRow"
+        style="@style/SettingRow">
+
+        <TextView
+          android:id="@+id/versionLabel"
+          style="@style/SettingLabel" />
+
+        <TextView style="@style/SettingHint" android:text="@string/about_hint" />
+      </LinearLayout>
+    </LinearLayout>
+  </LinearLayout>
+</ScrollView>
