@@ -5,35 +5,68 @@
   android:fillViewport="true">
 
   <LinearLayout
-    android:id="@+id/root"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:gravity="center_horizontal"
     android:orientation="vertical"
-    android:paddingLeft="24dp"
-    android:paddingTop="32dp"
-    android:paddingRight="24dp"
+    android:paddingLeft="20dp"
+    android:paddingTop="20dp"
+    android:paddingRight="20dp"
     android:paddingBottom="24dp">
 
-    <TextView
-      android:id="@+id/outputLabel"
+    <!-- Output card -->
+    <LinearLayout
+      android:id="@+id/outputCard"
       android:layout_width="match_parent"
       android:layout_height="wrap_content"
-      android:gravity="center"
-      android:textColor="@color/text_primary"
-      android:textSize="20sp"
-      android:textStyle="bold" />
+      android:background="@drawable/card_bg"
+      android:gravity="center_vertical"
+      android:orientation="horizontal"
+      android:padding="16dp">
 
-    <TextView
-      android:id="@+id/warningLabel"
+      <ImageView
+        android:id="@+id/outputIcon"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:importantForAccessibility="no" />
+
+      <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="14dp"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+          android:id="@+id/outputTitle"
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"
+          android:textColor="@color/text_primary"
+          android:textSize="17sp"
+          android:textStyle="bold" />
+
+        <TextView
+          android:id="@+id/outputSubtitle"
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"
+          android:layout_marginTop="2dp"
+          android:textColor="@color/text_secondary"
+          android:textSize="14sp" />
+      </LinearLayout>
+    </LinearLayout>
+
+    <!-- Mic button -->
+    <Space
       android:layout_width="match_parent"
-      android:layout_height="wrap_content"
-      android:layout_marginTop="4dp"
-      android:gravity="center"
-      android:text="@string/feedback_warning"
-      android:textColor="@color/warning"
-      android:textSize="14sp"
-      android:visibility="gone" />
+      android:layout_height="0dp"
+      android:layout_weight="1"
+      android:minHeight="16dp" />
+
+    <com.github.warren_bank.echo.MicButtonView
+      android:id="@+id/micButton"
+      android:layout_width="260dp"
+      android:layout_height="260dp"
+      android:layout_gravity="center_horizontal"
+      android:contentDescription="@string/app_name" />
 
     <TextView
       android:id="@+id/statusLabel"
@@ -41,196 +74,217 @@
       android:layout_height="wrap_content"
       android:layout_marginTop="8dp"
       android:gravity="center"
-      android:textColor="@color/text_secondary"
-      android:textSize="16sp" />
-
-    <Space
-      android:layout_width="match_parent"
-      android:layout_height="0dp"
-      android:layout_weight="1"
-      android:minHeight="24dp" />
-
-    <FrameLayout
-      android:id="@+id/micButton"
-      android:layout_width="220dp"
-      android:layout_height="220dp"
-      android:background="@drawable/mic_button"
-      android:clickable="true"
-      android:elevation="8dp"
-      android:focusable="true">
-
-      <ImageView
-        android:id="@+id/micIcon"
-        android:layout_width="96dp"
-        android:layout_height="96dp"
-        android:layout_gravity="center"
-        android:importantForAccessibility="no"
-        android:src="@drawable/ic_mic" />
-    </FrameLayout>
+      android:textColor="@color/text_primary"
+      android:textSize="22sp"
+      android:textStyle="bold" />
 
     <TextView
       android:id="@+id/hintLabel"
-      android:layout_width="wrap_content"
-      android:layout_height="wrap_content"
-      android:layout_marginTop="20dp"
-      android:textColor="@color/text_secondary"
-      android:textSize="18sp" />
-
-    <TextView
       android:layout_width="match_parent"
       android:layout_height="wrap_content"
-      android:layout_marginTop="24dp"
-      android:text="@string/level"
+      android:layout_marginTop="4dp"
+      android:gravity="center"
       android:textColor="@color/text_secondary"
-      android:textSize="14sp" />
-
-    <ProgressBar
-      android:id="@+id/levelBar"
-      style="@android:style/Widget.ProgressBar.Horizontal"
-      android:layout_width="match_parent"
-      android:layout_height="8dp"
-      android:layout_marginTop="6dp"
-      android:max="100"
-      android:progressDrawable="@drawable/level_bar" />
+      android:textSize="15sp" />
 
     <Space
       android:layout_width="match_parent"
       android:layout_height="0dp"
       android:layout_weight="1"
-      android:minHeight="24dp" />
+      android:minHeight="16dp" />
 
-    <RadioGroup
-      android:id="@+id/modeGroup"
+    <!-- Main controls -->
+    <LinearLayout
+      android:id="@+id/modeSegment"
+      android:layout_width="match_parent"
+      android:layout_height="48dp"
+      android:background="@drawable/seg_container"
+      android:orientation="horizontal"
+      android:padding="4dp" />
+
+    <LinearLayout
       android:layout_width="match_parent"
       android:layout_height="wrap_content"
-      android:orientation="horizontal">
+      android:layout_marginTop="16dp"
+      android:background="@drawable/card_bg"
+      android:orientation="vertical"
+      android:padding="16dp">
 
-      <RadioButton
-        android:id="@+id/modeToggle"
-        android:layout_width="0dp"
+      <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:text="@string/mode_toggle"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <ImageView
+          android:id="@+id/volumeIcon"
+          android:layout_width="24dp"
+          android:layout_height="24dp"
+          android:importantForAccessibility="no"
+          android:src="@drawable/ic_speaker" />
+
+        <TextView
+          android:layout_width="0dp"
+          android:layout_height="wrap_content"
+          android:layout_marginLeft="12dp"
+          android:layout_weight="1"
+          android:text="@string/volume"
+          android:textColor="@color/text_primary"
+          android:textSize="16sp" />
+
+        <TextView
+          android:id="@+id/gainValue"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:textColor="@color/text_secondary"
+          android:textSize="16sp" />
+      </LinearLayout>
+
+      <SeekBar
+        android:id="@+id/gainBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp" />
+
+      <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="@string/noise_title"
         android:textColor="@color/text_primary"
         android:textSize="16sp" />
 
-      <RadioButton
-        android:id="@+id/modeHold"
+      <LinearLayout
+        android:id="@+id/noiseSegment"
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:layout_marginTop="8dp"
+        android:background="@drawable/seg_container"
+        android:orientation="horizontal"
+        android:padding="4dp" />
+
+      <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="@string/howl_title"
+        android:textColor="@color/text_primary"
+        android:textSize="16sp" />
+
+      <LinearLayout
+        android:id="@+id/howlSegment"
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:layout_marginTop="8dp"
+        android:background="@drawable/seg_container"
+        android:orientation="horizontal"
+        android:padding="4dp" />
+    </LinearLayout>
+
+    <!-- Advanced -->
+    <LinearLayout
+      android:id="@+id/advancedHeader"
+      android:layout_width="match_parent"
+      android:layout_height="48dp"
+      android:layout_marginTop="8dp"
+      android:background="?android:attr/selectableItemBackground"
+      android:clickable="true"
+      android:focusable="true"
+      android:gravity="center_vertical"
+      android:orientation="horizontal"
+      android:paddingLeft="4dp"
+      android:paddingRight="4dp">
+
+      <TextView
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:text="@string/mode_hold"
+        android:text="@string/advanced"
+        android:textColor="@color/text_secondary"
+        android:textSize="15sp" />
+
+      <ImageView
+        android:id="@+id/advancedArrow"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:importantForAccessibility="no"
+        android:src="@drawable/ic_expand" />
+    </LinearLayout>
+
+    <LinearLayout
+      android:id="@+id/advancedPanel"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:background="@drawable/card_bg"
+      android:orientation="vertical"
+      android:padding="16dp"
+      android:visibility="gone">
+
+      <Switch
+        android:id="@+id/guardSwitch"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/guard_speaker"
         android:textColor="@color/text_primary"
-        android:textSize="16sp" />
-    </RadioGroup>
+        android:textSize="15sp" />
 
-    <TextView
-      android:id="@+id/gainLabel"
-      android:layout_width="match_parent"
-      android:layout_height="wrap_content"
-      android:layout_marginTop="20dp"
-      android:textColor="@color/text_primary"
-      android:textSize="16sp" />
+      <Switch
+        android:id="@+id/highPassSwitch"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="14dp"
+        android:text="@string/high_pass"
+        android:textColor="@color/text_primary"
+        android:textSize="15sp" />
 
-    <SeekBar
-      android:id="@+id/gainBar"
-      android:layout_width="match_parent"
-      android:layout_height="wrap_content"
-      android:layout_marginTop="4dp"
-      android:max="200" />
+      <Switch
+        android:id="@+id/limiterSwitch"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="14dp"
+        android:text="@string/limiter"
+        android:textColor="@color/text_primary"
+        android:textSize="15sp" />
 
-    <TextView
-      android:layout_width="match_parent"
-      android:layout_height="wrap_content"
-      android:layout_marginTop="20dp"
-      android:text="@string/source"
-      android:textColor="@color/text_primary"
-      android:textSize="16sp" />
+      <Switch
+        android:id="@+id/micDirSwitch"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="14dp"
+        android:text="@string/mic_direction"
+        android:textColor="@color/text_primary"
+        android:textSize="15sp" />
 
-    <Spinner
-      android:id="@+id/sourceSpinner"
-      android:layout_width="match_parent"
-      android:layout_height="wrap_content"
-      android:layout_marginTop="4dp" />
+      <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="18dp"
+        android:text="@string/source"
+        android:textColor="@color/text_primary"
+        android:textSize="15sp" />
 
-    <Switch
-      android:id="@+id/guardSwitch"
-      android:layout_width="match_parent"
-      android:layout_height="wrap_content"
-      android:layout_marginTop="20dp"
-      android:text="@string/guard_speaker"
-      android:textColor="@color/text_primary"
-      android:textSize="16sp" />
+      <Spinner
+        android:id="@+id/sourceSpinner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp" />
 
-    <Switch
-      android:id="@+id/feedbackSwitch"
-      android:layout_width="match_parent"
-      android:layout_height="wrap_content"
-      android:layout_marginTop="12dp"
-      android:text="@string/feedback"
-      android:textColor="@color/text_primary"
-      android:textSize="16sp" />
-
-    <Switch
-      android:id="@+id/denoiseSwitch"
-      android:layout_width="match_parent"
-      android:layout_height="wrap_content"
-      android:layout_marginTop="12dp"
-      android:text="@string/denoise"
-      android:textColor="@color/text_primary"
-      android:textSize="16sp" />
-
-    <Switch
-      android:id="@+id/shiftSwitch"
-      android:layout_width="match_parent"
-      android:layout_height="wrap_content"
-      android:layout_marginTop="12dp"
-      android:text="@string/shift"
-      android:textColor="@color/text_primary"
-      android:textSize="16sp" />
-
-    <Switch
-      android:id="@+id/highPassSwitch"
-      android:layout_width="match_parent"
-      android:layout_height="wrap_content"
-      android:layout_marginTop="12dp"
-      android:text="@string/high_pass"
-      android:textColor="@color/text_primary"
-      android:textSize="16sp" />
-
-    <Switch
-      android:id="@+id/limiterSwitch"
-      android:layout_width="match_parent"
-      android:layout_height="wrap_content"
-      android:layout_marginTop="12dp"
-      android:text="@string/limiter"
-      android:textColor="@color/text_primary"
-      android:textSize="16sp" />
-
-    <Switch
-      android:id="@+id/micDirSwitch"
-      android:layout_width="match_parent"
-      android:layout_height="wrap_content"
-      android:layout_marginTop="12dp"
-      android:text="@string/mic_direction"
-      android:textColor="@color/text_primary"
-      android:textSize="16sp" />
-
-    <Switch
-      android:id="@+id/systemNsSwitch"
-      android:layout_width="match_parent"
-      android:layout_height="wrap_content"
-      android:layout_marginTop="12dp"
-      android:text="@string/system_ns"
-      android:textColor="@color/text_primary"
-      android:textSize="16sp" />
+      <TextView
+        android:id="@+id/advancedInfo"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="14dp"
+        android:textColor="@color/text_secondary"
+        android:textSize="13sp" />
+    </LinearLayout>
 
     <Button
       android:id="@+id/stopButton"
       style="@android:style/Widget.Material.Button.Borderless.Colored"
       android:layout_width="wrap_content"
       android:layout_height="wrap_content"
-      android:layout_marginTop="16dp"
+      android:layout_gravity="center_horizontal"
+      android:layout_marginTop="8dp"
       android:text="@string/stop_service"
       android:visibility="gone" />
   </LinearLayout>

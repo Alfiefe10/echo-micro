@@ -1,48 +1,56 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
   <string name="volume">Volumen</string>
-  <string name="notification_text">Micro en marcha.</string>
+  <string name="notification_text">Micro encendido.</string>
   <string name="exit">Salir</string>
 
-  <string name="output_bluetooth">Bluetooth: %s</string>
-  <string name="output_wired">Cable: %s</string>
-  <string name="output_wired_generic">Salida por cable</string>
-  <string name="output_speaker">Altavoz del móvil — conecta antes un altavoz</string>
-  <string name="output_other">Salida: %s</string>
-  <string name="feedback_warning">El micro oirá el altavoz del móvil y pitará</string>
+  <string name="output_bluetooth_title">Bluetooth · %s</string>
+  <string name="output_bluetooth_subtitle">Retraso alto (~250 ms). Por cable va mejor.</string>
+  <string name="output_wired_title">Cable · %s</string>
+  <string name="output_wired_generic">Cable</string>
+  <string name="output_wired_subtitle">Retraso bajo</string>
+  <string name="output_other_title">Salida · %s</string>
+  <string name="output_none_title">No hay altavoz conectado</string>
+  <string name="output_none_subtitle">Conecta un altavoz por Bluetooth o por cable</string>
+  <string name="output_none_unguarded">El micro oirá el móvil y pitará</string>
 
-  <string name="status_idle">Parado</string>
+  <string name="status_idle">Listo</string>
   <string name="status_live">En directo</string>
-  <string name="status_muted">Listo — mantén el botón para hablar</string>
+  <string name="status_muted">Silenciado</string>
+  <string name="status_blocked">Bloqueado</string>
   <string name="status_permission_denied">Sin permiso de micrófono</string>
   <string name="status_error">Error: %s</string>
 
   <string name="hint_toggle">Toca para hablar</string>
   <string name="hint_toggle_stop">Toca para parar</string>
-  <string name="hint_hold">Mantén para hablar</string>
+  <string name="hint_hold">Mantén pulsado para hablar</string>
+  <string name="hint_blocked">Sonaría por el altavoz del móvil</string>
+  <string name="hint_cuts">%d frecuencias de pitido cortadas</string>
 
   <string name="mode_toggle">Pulsar</string>
-  <string name="mode_hold">Mantener para hablar</string>
+  <string name="mode_hold">Mantener</string>
 
-  <string name="gain">Ganancia: %d%%</string>
-  <string name="level">Nivel de entrada</string>
+  <string name="noise_title">Ruido de fondo</string>
+  <string name="howl_title">Protección contra pitidos</string>
+  <string name="level_off">No</string>
+  <string name="level_light">Suave</string>
+  <string name="level_normal">Normal</string>
+  <string name="level_strong">Fuerte</string>
+
+  <string name="advanced">Avanzado</string>
+  <string name="guard_speaker">Bloquear si suena por el altavoz del móvil</string>
+  <string name="high_pass">Quitar graves (por debajo de 120 Hz)</string>
+  <string name="limiter">Limitador (protege el altavoz)</string>
+  <string name="mic_direction">Micro direccional, hacia ti (si el móvil lo admite)</string>
   <string name="source">Fuente del micro</string>
   <string name="source_mic">Estándar (MIC)</string>
   <string name="source_performance">Directo / karaoke (VOICE_PERFORMANCE)</string>
   <string name="source_unprocessed">Sin procesar (UNPROCESSED)</string>
   <string name="source_communication">Llamada, con antieco (VOICE_COMMUNICATION)</string>
-  <string name="stop_service">Parar</string>
-  <string name="guard_speaker">Bloquear si suena por el altavoz del móvil</string>
-  <string name="status_blocked">Bloqueado: sonaría por el altavoz del móvil</string>
+  <string name="advanced_info">Ruido de fondo · Suave = filtro del propio móvil; Fuerte = RNNoise (+10–20 ms).\nProtección contra pitidos · Normal = cortes automáticos; Fuerte = además desplaza la voz 5 Hz (solo para hablar).</string>
+  <string name="denoise_unavailable">La reducción de ruido fuerte no funciona en este móvil (necesita 48 kHz).</string>
+  <string name="stop_service">Apagar el micro</string>
+
   <string name="no_speaker_title">No hay altavoz conectado</string>
-  <string name="no_speaker_message">El sonido saldría por el propio móvil, junto al micro, y pitaría. Conecta un altavoz por Bluetooth o por cable.\n\nSi el altavoz está conectado y la app no lo detecta, desactiva «Bloquear si suena por el altavoz del móvil».</string>
-  <string name="high_pass">Quitar graves (por debajo de 120 Hz)</string>
-  <string name="limiter">Limitador (protege el altavoz)</string>
-  <string name="mic_direction">Micro direccional, hacia ti (si el móvil lo admite)</string>
-  <string name="system_ns">Supresor de ruido del móvil</string>
-  <string name="feedback">Supresor de pitido automático</string>
-  <string name="status_live_cuts">En directo — %d frecuencias de pitido cortadas</string>
-  <string name="denoise">Reducción de ruido avanzada (RNNoise, +10–20 ms)</string>
-  <string name="status_denoise_unavailable">La reducción de ruido avanzada no funciona en este móvil</string>
-  <string name="shift">Anti-acople extra (desplaza la voz 5 Hz; solo para hablar)</string>
+  <string name="no_speaker_message">El sonido saldría por el propio móvil, junto al micro, y pitaría. Conecta un altavoz por Bluetooth o por cable.\n\nSi el altavoz está conectado y la app no lo detecta, desactiva «Bloquear si suena por el altavoz del móvil» en Avanzado.</string>
 </resources>

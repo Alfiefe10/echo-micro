@@ -1,12 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
   <color name="background">#FF141218</color>
+  <color name="surface">#FF211F26</color>
+  <color name="outline">#FF49454F</color>
   <color name="text_primary">#FFE6E0E9</color>
   <color name="text_secondary">#FFCAC4D0</color>
+  <color name="accent">#FFD0BCFF</color>
+  <color name="on_accent">#FF381E72</color>
   <color name="warning">#FFF2B8B5</color>
-  <color name="mic_idle">#FFC62828</color>
-  <color name="mic_active">#FF388E3C</color>
-  <color name="mic_muted">#FF616161</color>
-  <color name="level_track">#FF36343B</color>
-  <color name="level_fill">#FF66BB6A</color>
+  <color name="warning_container">#FF8C1D18</color>
+  <color name="on_warning_container">#FFF9DEDC</color>
+  <color name="mic_idle">#FF7D5FC4</color>
+  <color name="mic_live">#FF388E3C</color>
+  <color name="mic_muted">#FF5A5560</color>
+  <color name="mic_blocked">#FFB3261E</color>
 </resources>

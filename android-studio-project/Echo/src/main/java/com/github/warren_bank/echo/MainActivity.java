@@ -17,18 +17,18 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.preference.PreferenceManager;
+import android.util.TypedValue;
+import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.FrameLayout;
 import android.widget.ImageView;
-import android.widget.ProgressBar;
-import android.widget.RadioGroup;
+import android.widget.LinearLayout;
 import android.widget.SeekBar;
-import android.widget.Switch;
 import android.widget.Spinner;
+import android.widget.Switch;
 import android.widget.TextView;
 
 import java.util.ArrayList;
@@ -53,20 +53,26 @@ public class MainActivity extends Activity {
     R.string.source_communication
   };
 
+  private interface OnSegmentSelected {
+    void onSelected(int index);
+  }
+
   private SharedPreferences prefs;
   private AudioManager audioManager;
   private Handler handler;
 
-  private TextView outputLabel;
-  private TextView warningLabel;
+  private LinearLayout outputCard;
+  private ImageView outputIcon;
+  private TextView outputTitle;
+  private TextView outputSubtitle;
+  private MicButtonView micButton;
   private TextView statusLabel;
   private TextView hintLabel;
-  private TextView gainLabel;
-  private FrameLayout micButton;
-  private ImageView micIcon;
-  private ProgressBar levelBar;
-  private RadioGroup modeGroup;
+  private TextView gainValue;
   private SeekBar gainBar;
+  private LinearLayout advancedPanel;
+  private ImageView advancedArrow;
+  private TextView advancedInfo;
   private Spinner sourceSpinner;
   private Button stopButton;
 
@@ -100,38 +106,51 @@ public class MainActivity extends Activity {
     audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
     handler      = new Handler(Looper.getMainLooper());
 
-    outputLabel   = findViewById(R.id.outputLabel);
-    warningLabel  = findViewById(R.id.warningLabel);
-    statusLabel   = findViewById(R.id.statusLabel);
-    hintLabel     = findViewById(R.id.hintLabel);
-    gainLabel     = findViewById(R.id.gainLabel);
-    micButton     = findViewById(R.id.micButton);
-    micIcon       = findViewById(R.id.micIcon);
-    levelBar      = findViewById(R.id.levelBar);
-    modeGroup     = findViewById(R.id.modeGroup);
-    gainBar       = findViewById(R.id.gainBar);
-    sourceSpinner = findViewById(R.id.sourceSpinner);
-    stopButton    = findViewById(R.id.stopButton);
+    outputCard     = findViewById(R.id.outputCard);
+    outputIcon     = findViewById(R.id.outputIcon);
+    outputTitle    = findViewById(R.id.outputTitle);
+    outputSubtitle = findViewById(R.id.outputSubtitle);
+    micButton      = findViewById(R.id.micButton);
+    statusLabel    = findViewById(R.id.statusLabel);
+    hintLabel      = findViewById(R.id.hintLabel);
+    gainValue      = findViewById(R.id.gainValue);
+    gainBar        = findViewById(R.id.gainBar);
+    advancedPanel  = findViewById(R.id.advancedPanel);
+    advancedArrow  = findViewById(R.id.advancedArrow);
+    advancedInfo   = findViewById(R.id.advancedInfo);
+    sourceSpinner  = findViewById(R.id.sourceSpinner);
+    stopButton     = findViewById(R.id.stopButton);
+
+    int secondary = getColor(R.color.text_secondary);
+    ((ImageView) findViewById(R.id.volumeIcon)).setImageTintList(ColorStateList.valueOf(secondary));
+    advancedArrow.setImageTintList(ColorStateList.valueOf(secondary));
+
+    AudioEchoService.loadSettings(this);
 
     holdMode = prefs.getBoolean(PREF_HOLD_MODE, false);
-    modeGroup.check(holdMode ? R.id.modeHold : R.id.modeToggle);
-    modeGroup.setOnCheckedChangeListener((group, checkedId) -> setHoldMode(checkedId == R.id.modeHold));
+    setupSegment(R.id.modeSegment, new int[]{R.string.mode_toggle, R.string.mode_hold},
+      holdMode ? 1 : 0, index -> setHoldMode(index == 1));
+    setupSegment(R.id.noiseSegment, new int[]{R.string.level_off, R.string.level_light, R.string.level_strong},
+      currentNoiseLevel(), this::setNoiseLevel);
+    setupSegment(R.id.howlSegment, new int[]{R.string.level_off, R.string.level_normal, R.string.level_strong},
+      currentHowlLevel(), this::setHowlLevel);
 
     setupGain();
     setupSource();
     applyButtonMode();
 
-    stopButton.setOnClickListener(v -> stopEcho());
+    bindSwitch(R.id.guardSwitch,    AudioEchoService.PREF_GUARD_SPEAKER, true, false);
+    bindSwitch(R.id.highPassSwitch, AudioEchoService.PREF_HIGH_PASS,     true, false);
+    bindSwitch(R.id.limiterSwitch,  AudioEchoService.PREF_LIMITER,       true, false);
+    bindSwitch(R.id.micDirSwitch,   AudioEchoService.PREF_MIC_DIRECTION, true, true);
 
-    AudioEchoService.loadSettings(this);
-    bindSwitch(R.id.guardSwitch,     AudioEchoService.PREF_GUARD_SPEAKER, true,  false);
-    bindSwitch(R.id.feedbackSwitch,  AudioEchoService.PREF_FEEDBACK,      true,  false);
-    bindSwitch(R.id.denoiseSwitch,   AudioEchoService.PREF_DENOISE,       false, false);
-    bindSwitch(R.id.shiftSwitch,     AudioEchoService.PREF_SHIFT,         false, false);
-    bindSwitch(R.id.highPassSwitch,  AudioEchoService.PREF_HIGH_PASS,     true,  false);
-    bindSwitch(R.id.limiterSwitch,   AudioEchoService.PREF_LIMITER,       true,  false);
-    bindSwitch(R.id.micDirSwitch,    AudioEchoService.PREF_MIC_DIRECTION, true,  true);
-    bindSwitch(R.id.systemNsSwitch,  AudioEchoService.PREF_SYSTEM_NS,     false, true);
+    findViewById(R.id.advancedHeader).setOnClickListener(v -> {
+      boolean open = advancedPanel.getVisibility() != View.VISIBLE;
+      advancedPanel.setVisibility(open ? View.VISIBLE : View.GONE);
+      advancedArrow.animate().rotation(open ? 180f : 0f).setDuration(150).start();
+    });
+
+    stopButton.setOnClickListener(v -> stopEcho());
 
     updateUi();
   }
@@ -155,18 +174,77 @@ public class MainActivity extends Activity {
   }
 
   // ---------------------------------------------------------------------------
+  // Segmented controls
+
+  private void setupSegment(int containerId, int[] labels, int selected, OnSegmentSelected listener) {
+    LinearLayout container = findViewById(containerId);
+    container.removeAllViews();
+    for (int i = 0; i < labels.length; i++) {
+      TextView item = new TextView(this);
+      item.setText(labels[i]);
+      item.setGravity(Gravity.CENTER);
+      item.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
+      item.setTextColor(getColorStateList(R.color.seg_text));
+      item.setBackgroundResource(R.drawable.seg_item);
+      item.setSelected(i == selected);
+      item.setClickable(true);
+      final int index = i;
+      item.setOnClickListener(v -> {
+        for (int k = 0; k < container.getChildCount(); k++)
+          container.getChildAt(k).setSelected(k == index);
+        listener.onSelected(index);
+      });
+      container.addView(item, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1));
+    }
+  }
+
+  // Background noise: 0 off, 1 the phone's own suppressor, 2 RNNoise
+  private int currentNoiseLevel() {
+    if (prefs.getBoolean(AudioEchoService.PREF_DENOISE, false)) return 2;
+    if (prefs.getBoolean(AudioEchoService.PREF_SYSTEM_NS, false)) return 1;
+    return 0;
+  }
+
+  private void setNoiseLevel(int level) {
+    boolean systemNsBefore = prefs.getBoolean(AudioEchoService.PREF_SYSTEM_NS, false);
+    prefs.edit()
+      .putBoolean(AudioEchoService.PREF_SYSTEM_NS, level == 1)
+      .putBoolean(AudioEchoService.PREF_DENOISE,   level == 2)
+      .apply();
+    AudioEchoService.loadSettings(this);
+    // The phone's suppressor is attached when the microphone opens
+    if (systemNsBefore != (level == 1)) restartIfActive();
+    updateUi();
+  }
+
+  // Howl protection: 0 off, 1 automatic notches, 2 notches + 5 Hz shift
+  private int currentHowlLevel() {
+    if (!prefs.getBoolean(AudioEchoService.PREF_FEEDBACK, true)) return 0;
+    return prefs.getBoolean(AudioEchoService.PREF_SHIFT, false) ? 2 : 1;
+  }
+
+  private void setHowlLevel(int level) {
+    prefs.edit()
+      .putBoolean(AudioEchoService.PREF_FEEDBACK, level >= 1)
+      .putBoolean(AudioEchoService.PREF_SHIFT,    level == 2)
+      .apply();
+    AudioEchoService.loadSettings(this);
+    updateUi();
+  }
+
+  // ---------------------------------------------------------------------------
   // Controls
 
   private void setupGain() {
     int percent = Math.round(prefs.getFloat(AudioEchoService.PREF_AUDIO_GAIN, 1.0f) * 100.0f);
     gainBar.setMax(Math.round(AudioEchoService.audioGainMax * 100.0f));
     gainBar.setProgress(percent);
-    gainLabel.setText(getString(R.string.gain, percent));
+    gainValue.setText(percent + " %");
 
     gainBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
       @Override
       public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-        gainLabel.setText(getString(R.string.gain, progress));
+        gainValue.setText(progress + " %");
         if (!fromUser) return;
 
         float gain = progress / 100.0f;
@@ -254,13 +332,13 @@ public class MainActivity extends Activity {
         switch (ev.getActionMasked()) {
           case MotionEvent.ACTION_DOWN:
             v.performClick();
-            v.animate().scaleX(1.06f).scaleY(1.06f).setDuration(80).start();
+            micButton.setHeld(true);
             if (AudioEchoService.isActive) setMuted(false);
             else startEcho(false);
             return true;
           case MotionEvent.ACTION_UP:
           case MotionEvent.ACTION_CANCEL:
-            v.animate().scaleX(1f).scaleY(1f).setDuration(120).start();
+            micButton.setHeld(false);
             hasPendingStart = false;
             setMuted(true);
             return true;
@@ -357,7 +435,7 @@ public class MainActivity extends Activity {
   }
 
   // ---------------------------------------------------------------------------
-  // UI
+  // Output detection
 
   private static boolean isBluetooth(int type) {
     return type == AudioDeviceInfo.TYPE_BLUETOOTH_A2DP
@@ -383,14 +461,6 @@ public class MainActivity extends Activity {
     return (device == null) || AudioEchoService.isPhoneSpeaker(device);
   }
 
-  private void showNoSpeakerDialog() {
-    new AlertDialog.Builder(this)
-      .setTitle(R.string.no_speaker_title)
-      .setMessage(R.string.no_speaker_message)
-      .setPositiveButton(android.R.string.ok, null)
-      .show();
-  }
-
   // The real route while running; otherwise a guess from the connected outputs.
   private AudioDeviceInfo currentOutput() {
     AudioDeviceInfo routed = AudioEchoService.routedDevice;
@@ -410,68 +480,116 @@ public class MainActivity extends Activity {
     return speaker;
   }
 
-  private void updateOutputLabel() {
+  private void showNoSpeakerDialog() {
+    new AlertDialog.Builder(this)
+      .setTitle(R.string.no_speaker_title)
+      .setMessage(R.string.no_speaker_message)
+      .setPositiveButton(android.R.string.ok, null)
+      .show();
+  }
+
+  // ---------------------------------------------------------------------------
+  // UI
+
+  private void updateOutputCard() {
     AudioDeviceInfo device = currentOutput();
+    int icon;
+    String subtitle;
     boolean warn = false;
-    String text;
 
     if (isOnPhoneSpeaker(device)) {
-      text = getString(R.string.output_speaker);
+      icon = R.drawable.ic_warning;
+      outputTitle.setText(R.string.output_none_title);
+      subtitle = getString(AudioEchoService.guardSpeaker ? R.string.output_none_subtitle : R.string.output_none_unguarded);
       warn = true;
     }
     else {
-      CharSequence name = device.getProductName();
-      String label = (name == null) ? "" : name.toString().trim();
+      CharSequence productName = device.getProductName();
+      String name = (productName == null) ? "" : productName.toString().trim();
       int type = device.getType();
 
-      if (isBluetooth(type))
-        text = getString(R.string.output_bluetooth, label);
-      else if (isWired(type))
-        text = label.isEmpty() ? getString(R.string.output_wired_generic) : getString(R.string.output_wired, label);
-      else
-        text = getString(R.string.output_other, label);
+      if (isBluetooth(type)) {
+        icon = R.drawable.ic_bluetooth;
+        outputTitle.setText(getString(R.string.output_bluetooth_title, name));
+        subtitle = getString(R.string.output_bluetooth_subtitle);
+      }
+      else if (isWired(type)) {
+        icon = R.drawable.ic_wired;
+        outputTitle.setText(name.isEmpty() ? getString(R.string.output_wired_generic) : getString(R.string.output_wired_title, name));
+        subtitle = getString(R.string.output_wired_subtitle);
+      }
+      else {
+        icon = R.drawable.ic_speaker;
+        outputTitle.setText(getString(R.string.output_other_title, name));
+        subtitle = "";
+      }
     }
 
-    outputLabel.setText(text);
-    warningLabel.setVisibility(warn ? View.VISIBLE : View.GONE);
+    outputSubtitle.setText(subtitle);
+    outputSubtitle.setVisibility(subtitle.isEmpty() ? View.GONE : View.VISIBLE);
+    outputIcon.setImageResource(icon);
+
+    int textColor = getColor(warn ? R.color.on_warning_container : R.color.text_primary);
+    int subColor  = getColor(warn ? R.color.on_warning_container : R.color.text_secondary);
+    int iconColor = getColor(warn ? R.color.on_warning_container : R.color.accent);
+    outputCard.setBackgroundResource(warn ? R.drawable.card_warn_bg : R.drawable.card_bg);
+    outputTitle.setTextColor(textColor);
+    outputSubtitle.setTextColor(subColor);
+    outputIcon.setImageTintList(ColorStateList.valueOf(iconColor));
   }
 
   private void updateUi() {
-    boolean active = AudioEchoService.isActive;
-    boolean live   = active && !AudioEchoService.isMuted;
+    boolean active  = AudioEchoService.isActive;
+    boolean blocked = active && AudioEchoService.isBlocked;
+    boolean live    = active && !AudioEchoService.isMuted && !blocked;
 
-    updateOutputLabel();
+    updateOutputCard();
 
-    String status;
-    if (active && AudioEchoService.denoise && !AudioEchoService.denoiseUsable)
-      status = getString(R.string.status_denoise_unavailable);
-    else if (active && AudioEchoService.isBlocked)
-      status = getString(R.string.status_blocked);
-    else if (AudioEchoService.lastError != null && !active)
+    String idleHint = getString(holdMode ? R.string.hint_hold : R.string.hint_toggle);
+    String status, hint;
+    int state;
+    if (!active && AudioEchoService.lastError != null) {
       status = getString(R.string.status_error, AudioEchoService.lastError);
-    else if (statusOverride != null && !active)
+      hint   = idleHint;
+      state  = MicButtonView.STATE_IDLE;
+    }
+    else if (!active && statusOverride != null) {
       status = statusOverride;
-    else if (live && AudioEchoService.feedbackCuts > 0)
-      status = getString(R.string.status_live_cuts, AudioEchoService.feedbackCuts);
-    else if (live)
+      hint   = idleHint;
+      state  = MicButtonView.STATE_IDLE;
+    }
+    else if (blocked) {
+      status = getString(R.string.status_blocked);
+      hint   = getString(R.string.hint_blocked);
+      state  = MicButtonView.STATE_BLOCKED;
+    }
+    else if (live) {
       status = getString(R.string.status_live);
-    else if (active)
+      int cuts = AudioEchoService.feedbackCuts;
+      hint   = (cuts > 0) ? getString(R.string.hint_cuts, cuts)
+                          : getString(holdMode ? R.string.hint_hold : R.string.hint_toggle_stop);
+      state  = MicButtonView.STATE_LIVE;
+    }
+    else if (active) {
       status = getString(R.string.status_muted);
-    else
+      hint   = getString(R.string.hint_hold);
+      state  = MicButtonView.STATE_MUTED;
+    }
+    else {
       status = getString(R.string.status_idle);
+      hint   = idleHint;
+      state  = MicButtonView.STATE_IDLE;
+    }
     statusLabel.setText(status);
+    hintLabel.setText(hint);
+    micButton.setState(state);
+    micButton.setLevel(live ? AudioEchoService.inputLevel : 0.0f);
 
-    live = live && !AudioEchoService.isBlocked;
-    int color = getColor(live ? R.color.mic_active : (active ? R.color.mic_muted : R.color.mic_idle));
-    micButton.setBackgroundTintList(ColorStateList.valueOf(color));
-    micIcon.setImageResource((active && !live) ? R.drawable.ic_mic_off : R.drawable.ic_mic);
+    String info = getString(R.string.advanced_info);
+    if (AudioEchoService.denoise && !AudioEchoService.denoiseUsable)
+      info += "\n\n" + getString(R.string.denoise_unavailable);
+    advancedInfo.setText(info);
 
-    if (holdMode)
-      hintLabel.setText(R.string.hint_hold);
-    else
-      hintLabel.setText(live ? R.string.hint_toggle_stop : R.string.hint_toggle);
-
-    levelBar.setProgress(active ? Math.round(AudioEchoService.inputLevel * 100.0f) : 0);
     stopButton.setVisibility(active && holdMode ? View.VISIBLE : View.GONE);
   }
 }

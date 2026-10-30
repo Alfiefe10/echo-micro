@@ -5,6 +5,6 @@
     <item name="android:statusBarColor">@color/background</item>
     <item name="android:navigationBarColor">@color/background</item>
     <item name="android:windowLightStatusBar">true</item>
-    <item name="android:colorAccent">@color/mic_active</item>
+    <item name="android:colorAccent">@color/accent</item>
   </style>
 </resources>
