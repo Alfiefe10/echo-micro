@@ -36,6 +36,7 @@ public class AudioEchoService extends Service {
 
   public static final String PREF_AUDIO_GAIN   = "AUDIO_GAIN";
   public static final String PREF_AUDIO_SOURCE = "AUDIO_SOURCE";
+  public static final String PREF_GUARD_SPEAKER = "GUARD_SPEAKER";
 
   // State shared with MainActivity (same process).
   public static volatile boolean isActive    = false;
@@ -43,6 +44,17 @@ public class AudioEchoService extends Service {
   public static volatile float   inputLevel  = 0.0f;
   public static volatile AudioDeviceInfo routedDevice = null;
   public static volatile String  lastError   = null;
+  // Silence the output while it plays on the phone's own speaker (feedback howl)
+  public static volatile boolean guardSpeaker = true;
+  public static volatile boolean isBlocked    = false;
+
+  public static boolean isPhoneSpeaker(AudioDeviceInfo device) {
+    if (device == null) return false;
+    int type = device.getType();
+    return type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER
+        || type == AudioDeviceInfo.TYPE_BUILTIN_EARPIECE
+        || type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER_SAFE;
+  }
 
   private static int convertGainToPercent(float gain) {
     return Math.round(gain * 100.0f);
@@ -78,6 +90,7 @@ public class AudioEchoService extends Service {
 
     session = null;
     restoreAudioGain();
+    guardSpeaker = PreferenceManager.getDefaultSharedPreferences(this).getBoolean(PREF_GUARD_SPEAKER, true);
 
     notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 
@@ -313,8 +326,14 @@ public class AudioEchoService extends Service {
         while (current.running) {
           int readSize = audioRecord.read(buffer, 0, buffer.length);
           if (readSize > 0) {
+            // The route can change mid-session (e.g. a Bluetooth speaker disconnects)
+            if ((frames++ % 10) == 0)
+              routedDevice = audioTrack.getRoutedDevice();
+            // Until the route is known, assume the worst
+            isBlocked = guardSpeaker && (routedDevice == null || isPhoneSpeaker(routedDevice));
+
             int peak = 0;
-            float gain = isMuted ? 0.0f : audioGain;
+            float gain = (isMuted || isBlocked) ? 0.0f : audioGain;
             for (int i = 0; i < readSize; i++) {
               int sample = buffer[i];
               if (Math.abs(sample) > peak) peak = Math.abs(sample);
@@ -329,10 +348,6 @@ public class AudioEchoService extends Service {
             }
             inputLevel = peak / 32768.0f;
             audioTrack.write(buffer, 0, readSize);
-
-            // The route can change mid-session (e.g. a Bluetooth speaker connects)
-            if ((++frames % 50) == 0)
-              routedDevice = audioTrack.getRoutedDevice();
           }
           else if (readSize < 0) {
             throw new IllegalStateException("read " + readSize);
@@ -356,6 +371,7 @@ public class AudioEchoService extends Service {
           audioTrack.release();
         }
         inputLevel = 0.0f;
+        isBlocked  = false;
       }
 
       // Only the session that is still current may stop the service

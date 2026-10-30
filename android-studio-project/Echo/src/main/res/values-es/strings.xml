@@ -32,4 +32,8 @@
   <string name="source_unprocessed">Sin procesar (UNPROCESSED)</string>
   <string name="source_communication">Llamada, con antieco (VOICE_COMMUNICATION)</string>
   <string name="stop_service">Parar</string>
+  <string name="guard_speaker">Bloquear si suena por el altavoz del móvil</string>
+  <string name="status_blocked">Bloqueado: sonaría por el altavoz del móvil</string>
+  <string name="no_speaker_title">No hay altavoz conectado</string>
+  <string name="no_speaker_message">El sonido saldría por el propio móvil, junto al micro, y pitaría. Conecta un altavoz por Bluetooth o por cable.\n\nSi el altavoz está conectado y la app no lo detecta, desactiva «Bloquear si suena por el altavoz del móvil».</string>
 </resources>

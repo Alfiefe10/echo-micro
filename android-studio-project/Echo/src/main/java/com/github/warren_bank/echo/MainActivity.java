@@ -2,6 +2,7 @@ package com.github.warren_bank.echo;
 
 import android.Manifest.permission;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -26,6 +27,7 @@ import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.RadioGroup;
 import android.widget.SeekBar;
+import android.widget.Switch;
 import android.widget.Spinner;
 import android.widget.TextView;
 
@@ -67,6 +69,7 @@ public class MainActivity extends Activity {
   private SeekBar gainBar;
   private Spinner sourceSpinner;
   private Button stopButton;
+  private Switch guardSwitch;
 
   private boolean holdMode;
   private boolean pendingStartMuted;
@@ -110,6 +113,7 @@ public class MainActivity extends Activity {
     gainBar       = findViewById(R.id.gainBar);
     sourceSpinner = findViewById(R.id.sourceSpinner);
     stopButton    = findViewById(R.id.stopButton);
+    guardSwitch   = findViewById(R.id.guardSwitch);
 
     holdMode = prefs.getBoolean(PREF_HOLD_MODE, false);
     modeGroup.check(holdMode ? R.id.modeHold : R.id.modeToggle);
@@ -120,6 +124,14 @@ public class MainActivity extends Activity {
     applyButtonMode();
 
     stopButton.setOnClickListener(v -> stopEcho());
+
+    AudioEchoService.guardSpeaker = prefs.getBoolean(AudioEchoService.PREF_GUARD_SPEAKER, true);
+    guardSwitch.setChecked(AudioEchoService.guardSpeaker);
+    guardSwitch.setOnCheckedChangeListener((button, checked) -> {
+      AudioEchoService.guardSpeaker = checked;
+      prefs.edit().putBoolean(AudioEchoService.PREF_GUARD_SPEAKER, checked).apply();
+      updateUi();
+    });
 
     updateUi();
   }
@@ -268,6 +280,12 @@ public class MainActivity extends Activity {
       return;
     }
 
+    if (AudioEchoService.guardSpeaker && isOnPhoneSpeaker(currentOutput())) {
+      hasPendingStart = false;
+      showNoSpeakerDialog();
+      return;
+    }
+
     statusOverride = null;
     // The service reads this shared flag, so a release that arrives before
     // the service is up still mutes it
@@ -346,10 +364,16 @@ public class MainActivity extends Activity {
         || type == AudioDeviceInfo.TYPE_AUX_LINE;
   }
 
-  private static boolean isPhoneSpeaker(int type) {
-    return type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER
-        || type == AudioDeviceInfo.TYPE_BUILTIN_EARPIECE
-        || type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER_SAFE;
+  private static boolean isOnPhoneSpeaker(AudioDeviceInfo device) {
+    return (device == null) || AudioEchoService.isPhoneSpeaker(device);
+  }
+
+  private void showNoSpeakerDialog() {
+    new AlertDialog.Builder(this)
+      .setTitle(R.string.no_speaker_title)
+      .setMessage(R.string.no_speaker_message)
+      .setPositiveButton(android.R.string.ok, null)
+      .show();
   }
 
   // The real route while running; otherwise a guess from the connected outputs.
@@ -376,7 +400,7 @@ public class MainActivity extends Activity {
     boolean warn = false;
     String text;
 
-    if (device == null || isPhoneSpeaker(device.getType())) {
+    if (isOnPhoneSpeaker(device)) {
       text = getString(R.string.output_speaker);
       warn = true;
     }
@@ -404,7 +428,9 @@ public class MainActivity extends Activity {
     updateOutputLabel();
 
     String status;
-    if (AudioEchoService.lastError != null && !active)
+    if (active && AudioEchoService.isBlocked)
+      status = getString(R.string.status_blocked);
+    else if (AudioEchoService.lastError != null && !active)
       status = getString(R.string.status_error, AudioEchoService.lastError);
     else if (statusOverride != null && !active)
       status = statusOverride;
@@ -416,6 +442,7 @@ public class MainActivity extends Activity {
       status = getString(R.string.status_idle);
     statusLabel.setText(status);
 
+    live = live && !AudioEchoService.isBlocked;
     int color = getColor(live ? R.color.mic_active : (active ? R.color.mic_muted : R.color.mic_idle));
     micButton.setBackgroundTintList(ColorStateList.valueOf(color));
     micIcon.setImageResource((active && !live) ? R.drawable.ic_mic_off : R.drawable.ic_mic);
