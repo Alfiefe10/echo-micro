@@ -7,14 +7,21 @@ public final class AudioChain {
 
   public volatile boolean highPassEnabled = true;
   public volatile boolean limiterEnabled  = true;
+  public volatile boolean feedbackEnabled = true;
 
   private final Biquad  highPass;
   private final Limiter limiter;
+  private final FeedbackSuppressor feedback;
 
   public AudioChain(int sampleRate) {
     highPass = new Biquad();
     highPass.setHighPass(sampleRate, HIGH_PASS_HZ, 0.7071);
     limiter = new Limiter(sampleRate, 0.89f, 150.0);  // -1 dBFS
+    feedback = new FeedbackSuppressor(sampleRate);
+  }
+
+  public int getFeedbackCuts() {
+    return feedback.getNotchCount();
   }
 
   // Returns the input peak (before processing) in [0, 1].
@@ -30,6 +37,8 @@ public final class AudioChain {
     if (highPassEnabled) highPass.process(work, n);
 
     for (int i = 0; i < n; i++) work[i] *= gain;
+
+    if (feedbackEnabled) feedback.process(work, n);
 
     if (limiterEnabled) limiter.process(work, n);
 

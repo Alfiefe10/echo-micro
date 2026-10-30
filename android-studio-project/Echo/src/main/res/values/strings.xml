@@ -42,4 +42,6 @@
   <string name="limiter">Limiter (protects the speaker)</string>
   <string name="mic_direction">Directional mic, facing you (if the phone supports it)</string>
   <string name="system_ns">Phone noise suppression</string>
+  <string name="feedback">Automatic feedback (howl) suppressor</string>
+  <string name="status_live_cuts">Live — %d howl frequencies cut</string>
 </resources>

@@ -40,4 +40,6 @@
   <string name="limiter">Limitador (protege el altavoz)</string>
   <string name="mic_direction">Micro direccional, hacia ti (si el móvil lo admite)</string>
   <string name="system_ns">Supresor de ruido del móvil</string>
+  <string name="feedback">Supresor de pitido automático</string>
+  <string name="status_live_cuts">En directo — %d frecuencias de pitido cortadas</string>
 </resources>

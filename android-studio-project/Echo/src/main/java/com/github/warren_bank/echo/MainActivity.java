@@ -125,6 +125,7 @@ public class MainActivity extends Activity {
 
     AudioEchoService.loadSettings(this);
     bindSwitch(R.id.guardSwitch,     AudioEchoService.PREF_GUARD_SPEAKER, true,  false);
+    bindSwitch(R.id.feedbackSwitch,  AudioEchoService.PREF_FEEDBACK,      true,  false);
     bindSwitch(R.id.highPassSwitch,  AudioEchoService.PREF_HIGH_PASS,     true,  false);
     bindSwitch(R.id.limiterSwitch,   AudioEchoService.PREF_LIMITER,       true,  false);
     bindSwitch(R.id.micDirSwitch,    AudioEchoService.PREF_MIC_DIRECTION, true,  true);
@@ -446,6 +447,8 @@ public class MainActivity extends Activity {
       status = getString(R.string.status_error, AudioEchoService.lastError);
     else if (statusOverride != null && !active)
       status = statusOverride;
+    else if (live && AudioEchoService.feedbackCuts > 0)
+      status = getString(R.string.status_live_cuts, AudioEchoService.feedbackCuts);
     else if (live)
       status = getString(R.string.status_live);
     else if (active)

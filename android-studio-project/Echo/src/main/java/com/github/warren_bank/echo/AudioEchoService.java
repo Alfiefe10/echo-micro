@@ -45,6 +45,7 @@ public class AudioEchoService extends Service {
   public static final String PREF_LIMITER       = "LIMITER";
   public static final String PREF_MIC_DIRECTION = "MIC_DIRECTION";
   public static final String PREF_SYSTEM_NS     = "SYSTEM_NS";
+  public static final String PREF_FEEDBACK      = "FEEDBACK";
 
   // 10 ms at 48 kHz: small blocks keep the delay down
   private static final int BLOCK_MS = 10;
@@ -61,6 +62,8 @@ public class AudioEchoService extends Service {
   // Processing switches, applied live
   public static volatile boolean highPass     = true;
   public static volatile boolean limiter      = true;
+  public static volatile boolean feedback     = true;
+  public static volatile int     feedbackCuts = 0;
 
   public static boolean isPhoneSpeaker(AudioDeviceInfo device) {
     if (device == null) return false;
@@ -272,6 +275,7 @@ public class AudioEchoService extends Service {
     guardSpeaker = prefs.getBoolean(PREF_GUARD_SPEAKER, true);
     highPass     = prefs.getBoolean(PREF_HIGH_PASS, true);
     limiter      = prefs.getBoolean(PREF_LIMITER, true);
+    feedback     = prefs.getBoolean(PREF_FEEDBACK, true);
   }
 
   private int getNativeSampleRate() {
@@ -295,6 +299,7 @@ public class AudioEchoService extends Service {
     isActive   = true;
     lastError  = null;
     inputLevel = 0.0f;
+    feedbackCuts = 0;
 
     final int sampleRate  = getNativeSampleRate();
     final int audioSource = getAudioSource();
@@ -372,8 +377,10 @@ public class AudioEchoService extends Service {
 
             chain.highPassEnabled = highPass;
             chain.limiterEnabled  = limiter;
+            chain.feedbackEnabled = feedback;
             float gain = (isMuted || isBlocked) ? 0.0f : audioGain;
             inputLevel = chain.process(buffer, work, readSize, gain);
+            feedbackCuts = chain.getFeedbackCuts();
             audioTrack.write(buffer, 0, readSize);
           }
           else if (readSize < 0) {
