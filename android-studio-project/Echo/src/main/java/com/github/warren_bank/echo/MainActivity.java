@@ -234,8 +234,8 @@ public class MainActivity extends Activity {
           case MotionEvent.ACTION_UP:
           case MotionEvent.ACTION_CANCEL:
             v.animate().scaleX(1f).scaleY(1f).setDuration(120).start();
-            if (AudioEchoService.isActive) setMuted(true);
-            else hasPendingStart = false;
+            hasPendingStart = false;
+            setMuted(true);
             return true;
           default:
             return false;
@@ -269,10 +269,10 @@ public class MainActivity extends Activity {
     }
 
     statusOverride = null;
+    // The service reads this shared flag, so a release that arrives before
+    // the service is up still mutes it
     AudioEchoService.isMuted = muted;
-    Intent intent = serviceIntent(null);
-    intent.putExtra(AudioEchoService.EXTRA_MUTED, muted);
-    startForegroundService(intent);
+    startForegroundService(serviceIntent(null));
     updateUi();
   }
 
