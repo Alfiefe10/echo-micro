@@ -323,6 +323,41 @@ public class DspTests {
     check(jump < 1.5 * steady, String.format("ecualizador: cambio de preajuste sin clics (salto %.3f, normal %.3f)", jump, steady));
   }
 
+  // Output buffer model: each 10 ms the device plays 480 * rate frames; a stall delivers
+  // several blocks at once. Queue sizes are measured right after writing a block. Speech: 300 ms loud, 200 ms quiet (or no pauses at all).
+  static long[] runLatency(double rate, int stallAt, int stallBlocks, boolean pauses, int blocks) {
+    LatencyKeeper keeper = new LatencyKeeper(SR, 480);
+    short[] loud = new short[480], quiet = new short[480];
+    Arrays.fill(loud, (short) 12000);
+    Arrays.fill(quiet, (short) 200);
+    double queued = 0;
+    long maxAfter = 0, finalQueued, drops = 0;
+    for (int b = 0; b < blocks; b++) {
+      int arriving = (b == stallAt) ? stallBlocks : 1;
+      queued = Math.max(0, queued - 480 * rate);
+      for (int k = 0; k < arriving; k++) {
+        boolean speaking = !pauses || (b % 50) < 30;
+        if (keeper.shouldDrop((long) queued, speaking ? loud : quiet, 480)) drops++;
+        else queued += 480;
+      }
+      if (b > stallAt + 1 || stallAt < 0) maxAfter = Math.max(maxAfter, (long) queued);
+    }
+    finalQueued = (long) queued;
+    return new long[]{drops, maxAfter, finalQueued};
+  }
+
+  static void latencyTests() {
+    long[] r = runLatency(1.0, -1, 0, true, 3000);
+    check(r[0] == 0 && r[1] <= 960, "retraso: sin deriva no se salta nada (cola max " + r[1] * 1000 / SR + " ms)");
+    r = runLatency(0.995, -1, 0, true, 6000);
+    check(r[1] <= 2000, "retraso: salida lenta, se mantiene <= 42 ms (max " + r[1] * 1000 / SR + " ms, " + r[0] + " bloques saltados)");
+    r = runLatency(1.0, 100, 30, true, 1000);
+    check(r[2] <= 2000, "retraso: tras un parón de 300 ms vuelve a <= 42 ms (final " + r[2] * 1000 / SR + " ms)");
+    check(r[1] <= SR / 10 + 480, "retraso: tras el parón nunca pasa de 110 ms (max " + r[1] * 1000 / SR + " ms)");
+    r = runLatency(0.995, -1, 0, false, 6000);
+    check(r[1] <= SR / 10 + 480, "retraso: hablando sin pausas, tope de 110 ms (max " + r[1] * 1000 / SR + " ms)");
+  }
+
   public static void main(String[] args) {
     check(highPassDb(50) < -12, String.format("paso alto: 50 Hz atenuados (%.1f dB)", highPassDb(50)));
     check(Math.abs(highPassDb(1000)) < 0.5, String.format("paso alto: 1 kHz intacto (%.1f dB)", highPassDb(1000)));
@@ -350,6 +385,7 @@ public class DspTests {
     gateTests();
     agcTests();
     eqTests();
+    latencyTests();
 
     if (failures > 0) {
       System.out.println(failures + " pruebas fallidas");

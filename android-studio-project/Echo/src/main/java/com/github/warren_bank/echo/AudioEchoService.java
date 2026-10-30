@@ -24,6 +24,7 @@ import android.os.Process;
 import android.preference.PreferenceManager;
 
 import com.github.warren_bank.echo.dsp.AudioChain;
+import com.github.warren_bank.echo.dsp.LatencyKeeper;
 
 public class AudioEchoService extends Service {
   public  static final String ACTION_EXIT     = "com.github.warren_bank.echo.ACTION_EXIT";
@@ -422,14 +423,20 @@ public class AudioEchoService extends Service {
               .setChannelMask(CHANNEL_OUT)
               .build()
           )
-          .setBufferSizeInBytes(minTrackBuf * 2)
+          // Room for 200 ms: any extra delay then waits here, where it can be measured and
+          // trimmed, instead of piling up unseen in the microphone buffer
+          .setBufferSizeInBytes(Math.max(minTrackBuf * 2, sampleRate / 5 * 2))
           .setTransferMode(AudioTrack.MODE_STREAM)
           .setPerformanceMode(AudioTrack.PERFORMANCE_MODE_LOW_LATENCY)
           .build();
 
+        audioTrack.setBufferSizeInFrames(sampleRate / 5);
+
         chain = new AudioChain(sampleRate);
         denoiseUsable = chain.isDenoiseUsable();
         short[] buffer = new short[sampleRate * BLOCK_MS / 1000];
+        LatencyKeeper keeper = new LatencyKeeper(sampleRate, buffer.length);
+        long framesWritten = 0;
         float[] work   = new float[buffer.length];
         audioRecord.startRecording();
         audioTrack.play();
@@ -462,7 +469,11 @@ public class AudioEchoService extends Service {
               recorder.write(buffer, readSize);
               recordingElapsedMs = recorder.getElapsedMs();
             }
-            audioTrack.write(buffer, 0, readSize);
+            long queued = framesWritten - (audioTrack.getPlaybackHeadPosition() & 0xFFFFFFFFL);
+            if (!keeper.shouldDrop(queued, buffer, readSize)) {
+              int written = audioTrack.write(buffer, 0, readSize);
+              if (written > 0) framesWritten += written;
+            }
           }
           else if (readSize < 0) {
             throw new IllegalStateException("read " + readSize);
