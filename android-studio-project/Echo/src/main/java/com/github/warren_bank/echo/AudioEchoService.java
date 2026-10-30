@@ -87,7 +87,7 @@ public class AudioEchoService extends Service {
   public static volatile String  lastRecording  = null;
   public static volatile String  recordingError = null;
   private static final WavRecorder recorder = new WavRecorder();
-  private static volatile int sessionSampleRate = DEFAULT_SAMPLE_RATE;
+  private static volatile int sessionSampleRate = 48000;
   // False when RNNoise cannot run here (library missing or not 48 kHz)
   public static volatile boolean denoiseUsable = true;
 
