@@ -48,6 +48,7 @@ public class AudioEchoService extends Service {
   public static final String PREF_FEEDBACK      = "FEEDBACK";
   public static final String PREF_DENOISE       = "DENOISE";
   public static final String PREF_SHIFT         = "FREQUENCY_SHIFT";
+  public static final String PREF_BACKOFF       = "HOWL_BACKOFF";
 
   // 10 ms at 48 kHz: small blocks keep the delay down
   private static final int BLOCK_MS = 10;
@@ -68,6 +69,8 @@ public class AudioEchoService extends Service {
   public static volatile int     feedbackCuts = 0;
   public static volatile boolean denoise      = false;
   public static volatile boolean shift        = false;
+  public static volatile boolean backoff      = false;
+  public static volatile double  backoffDb    = 0.0;
   // False when RNNoise cannot run here (library missing or not 48 kHz)
   public static volatile boolean denoiseUsable = true;
 
@@ -284,6 +287,7 @@ public class AudioEchoService extends Service {
     feedback     = prefs.getBoolean(PREF_FEEDBACK, true);
     denoise      = prefs.getBoolean(PREF_DENOISE, false);
     shift        = prefs.getBoolean(PREF_SHIFT, false);
+    backoff      = prefs.getBoolean(PREF_BACKOFF, false);
   }
 
   private int getNativeSampleRate() {
@@ -308,6 +312,7 @@ public class AudioEchoService extends Service {
     lastError  = null;
     inputLevel = 0.0f;
     feedbackCuts = 0;
+    backoffDb    = 0.0;
 
     final int sampleRate  = getNativeSampleRate();
     final int audioSource = getAudioSource();
@@ -390,9 +395,11 @@ public class AudioEchoService extends Service {
             chain.feedbackEnabled = feedback;
             chain.denoiseEnabled  = denoise;
             chain.shiftEnabled    = shift;
+            chain.backoffEnabled  = backoff;
             float gain = (isMuted || isBlocked) ? 0.0f : audioGain;
             inputLevel = chain.process(buffer, work, readSize, gain);
             feedbackCuts = chain.getFeedbackCuts();
+            backoffDb    = chain.getBackoffDb();
             audioTrack.write(buffer, 0, readSize);
           }
           else if (readSize < 0) {

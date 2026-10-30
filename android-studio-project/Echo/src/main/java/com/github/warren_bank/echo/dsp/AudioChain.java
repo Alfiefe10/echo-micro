@@ -11,15 +11,27 @@ public final class AudioChain {
   public volatile boolean feedbackEnabled = true;
   public volatile boolean denoiseEnabled  = false;
   public volatile boolean shiftEnabled    = false;
+  // Strong howl protection: also turn the whole level down while howls keep coming
+  public volatile boolean backoffEnabled  = false;
+
+  private static final double BACKOFF_STEP_DB    = -3.0;
+  private static final double BACKOFF_MAX_DB     = -12.0;
+  private static final double BACKOFF_HOLD_S     = 4.0;   // calm time before recovering
+  private static final double BACKOFF_RECOVER_DB = 1.0;   // per second
 
   private final Biquad  highPass;
   private final Limiter limiter;
   private final FeedbackSuppressor feedback;
   private final RnNoise denoise;
   private final FrequencyShifter shifter;
+  private final int sampleRate;
+  private int lastHowlEvents = 0;
+  private double backoffDb = 0.0;
+  private double calmSeconds = 0.0;
   private final boolean denoiseUsable;
 
   public AudioChain(int sampleRate) {
+    this.sampleRate = sampleRate;
     highPass = new Biquad();
     highPass.setHighPass(sampleRate, HIGH_PASS_HZ, 0.7071);
     limiter = new Limiter(sampleRate, 0.89f, 150.0);  // -1 dBFS
@@ -27,6 +39,32 @@ public final class AudioChain {
     shifter  = new FrequencyShifter(sampleRate, SHIFT_HZ);
     denoiseUsable = (sampleRate == 48000) && RnNoise.isAvailable();
     denoise = denoiseUsable ? new RnNoise() : null;
+  }
+
+  private void updateBackoff(int n) {
+    int events = feedback.getHowlEvents();
+    boolean howl = events != lastHowlEvents;
+    lastHowlEvents = events;
+
+    if (!backoffEnabled || !feedbackEnabled) {
+      backoffDb = 0.0;
+      return;
+    }
+    if (howl) {
+      backoffDb = Math.max(BACKOFF_MAX_DB, backoffDb + BACKOFF_STEP_DB);
+      calmSeconds = 0.0;
+    }
+    else {
+      double seconds = (double) n / sampleRate;
+      calmSeconds += seconds;
+      if (calmSeconds > BACKOFF_HOLD_S)
+        backoffDb = Math.min(0.0, backoffDb + BACKOFF_RECOVER_DB * seconds);
+    }
+  }
+
+  // Current automatic level reduction in dB (0 = none)
+  public double getBackoffDb() {
+    return backoffDb;
   }
 
   public boolean isDenoiseUsable() {
@@ -56,9 +94,11 @@ public final class AudioChain {
     // RNNoise needs exact 10 ms frames at 48 kHz; otherwise it is skipped
     if (denoiseEnabled && denoiseUsable && n == RnNoise.FRAME_SIZE) denoise.process(work);
 
-    for (int i = 0; i < n; i++) work[i] *= gain;
+    float backoff = (float) Math.pow(10, backoffDb / 20);
+    for (int i = 0; i < n; i++) work[i] *= gain * backoff;
 
     if (feedbackEnabled) feedback.process(work, n);
+    updateBackoff(n);
 
     if (shiftEnabled) shifter.process(work, n);
 

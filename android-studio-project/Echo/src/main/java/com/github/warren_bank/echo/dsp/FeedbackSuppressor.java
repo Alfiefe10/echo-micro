@@ -15,6 +15,8 @@ public final class FeedbackSuppressor {
   private static final double NEIGHBOUR_DB  = 18.0;   // peak above bins 4..8 away
   private static final double HARMONIC_DB   = 20.0;   // peak above its 2nd and 3rd harmonics
   private static final double PERSIST_MS    = 150.0;  // how long a candidate must last
+  private static final double LOUD_DB       = -15.0;  // a peak this loud is treated as an emergency:
+  private static final double LOUD_PERSIST_MS = 60.0; //   faster, and clipping harmonics are ignored
   private static final double FIRST_CUT_DB  = -12.0;
   private static final double STEP_CUT_DB   = -6.0;
   private static final double MAX_CUT_DB    = -30.0;
@@ -39,6 +41,10 @@ public final class FeedbackSuppressor {
   private final float[] history = new float[FFT_SIZE];
   private final int analysisHop;
   private final int persistHops;
+  private final int loudPersistHops;
+  private boolean candidateLoud = false;
+  // Counts howl events (new or repeated cuts) for the caller's gain back-off
+  private int howlEvents = 0;
   private int historyPos = 0;
   private int sinceAnalysis = 0;
   private long hops = 0;
@@ -55,6 +61,7 @@ public final class FeedbackSuppressor {
       window[i] = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / (FFT_SIZE - 1));
     analysisHop = sampleRate / 50;  // every 20 ms
     persistHops = (int) Math.ceil(PERSIST_MS / 20.0);
+    loudPersistHops = (int) Math.ceil(LOUD_PERSIST_MS / 20.0);
   }
 
   public synchronized void reset() {
@@ -64,6 +71,10 @@ public final class FeedbackSuppressor {
 
   public synchronized int getNotchCount() {
     return notchCount;
+  }
+
+  public synchronized int getHowlEvents() {
+    return howlEvents;
   }
 
   public synchronized double[] getNotchFrequencies() {
@@ -124,7 +135,8 @@ public final class FeedbackSuppressor {
     }
 
     double freq = 0;
-    if (best > 0 && magDb[best] > MIN_LEVEL_DB && isHowlShaped(best)) {
+    boolean loud = best > 0 && magDb[best] > LOUD_DB;
+    if (best > 0 && magDb[best] > MIN_LEVEL_DB && isHowlShaped(best, loud)) {
       // Parabolic interpolation for a sub-bin frequency
       double a = magDb[best - 1], b = magDb[best], c = magDb[best + 1];
       double offset = 0.5 * (a - c) / (a - 2 * b + c);
@@ -133,19 +145,21 @@ public final class FeedbackSuppressor {
 
     if (freq > 0 && candidateHops > 0 && Math.abs(freq - candidateFreq) <= Math.max(binHz, candidateFreq * SAME_FREQ)) {
       candidateHops++;
+      candidateLoud = loud;
     }
     else {
       candidateFreq = freq;
       candidateHops = (freq > 0) ? 1 : 0;
+      candidateLoud = loud;
     }
 
-    if (candidateHops >= persistHops) {
+    if (candidateHops >= (candidateLoud ? loudPersistHops : persistHops)) {
       cut(candidateFreq);
       candidateHops = 0;
     }
   }
 
-  private boolean isHowlShaped(int k) {
+  private boolean isHowlShaped(int k, boolean loud) {
     double peak = magDb[k];
 
     double neighbours = -200;
@@ -154,6 +168,9 @@ public final class FeedbackSuppressor {
       neighbours = Math.max(neighbours, binDb(k + d));
     }
     if (peak - neighbours < NEIGHBOUR_DB) return false;
+
+    // A howl that already saturates grows harmonics of its own
+    if (loud) return true;
 
     double harmonics = Math.max(maxAround(2 * k), maxAround(3 * k));
     return peak - harmonics >= HARMONIC_DB;
@@ -164,6 +181,7 @@ public final class FeedbackSuppressor {
   }
 
   private void cut(double freq) {
+    howlEvents++;
     for (int i = 0; i < notchCount; i++) {
       Notch notch = notches[i];
       if (Math.abs(notch.freq - freq) <= notch.freq * SAME_FREQ) {

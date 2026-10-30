@@ -3,6 +3,7 @@ package com.github.warren_bank.echo;
 import android.Manifest.permission;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.LocaleManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -15,12 +16,14 @@ import android.media.MediaRecorder;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.LocaleList;
 import android.os.Looper;
 import android.preference.PreferenceManager;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.WindowInsets;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -125,7 +128,9 @@ public class MainActivity extends Activity {
     ((ImageView) findViewById(R.id.volumeIcon)).setImageTintList(ColorStateList.valueOf(secondary));
     advancedArrow.setImageTintList(ColorStateList.valueOf(secondary));
 
+    migrateSettings();
     AudioEchoService.loadSettings(this);
+    applySystemBarInsets();
 
     holdMode = prefs.getBoolean(PREF_HOLD_MODE, false);
     setupSegment(R.id.modeSegment, new int[]{R.string.mode_toggle, R.string.mode_hold},
@@ -143,6 +148,8 @@ public class MainActivity extends Activity {
     bindSwitch(R.id.highPassSwitch, AudioEchoService.PREF_HIGH_PASS,     true, false);
     bindSwitch(R.id.limiterSwitch,  AudioEchoService.PREF_LIMITER,       true, false);
     bindSwitch(R.id.micDirSwitch,   AudioEchoService.PREF_MIC_DIRECTION, true, true);
+    bindSwitch(R.id.shiftSwitch,    AudioEchoService.PREF_SHIFT,         false, false);
+    setupLanguage();
 
     findViewById(R.id.advancedHeader).setOnClickListener(v -> {
       boolean open = advancedPanel.getVisibility() != View.VISIBLE;
@@ -218,19 +225,73 @@ public class MainActivity extends Activity {
     updateUi();
   }
 
-  // Howl protection: 0 off, 1 automatic notches, 2 notches + 5 Hz shift
+  // Howl protection: 0 off, 1 automatic notches, 2 notches + level back-off
   private int currentHowlLevel() {
     if (!prefs.getBoolean(AudioEchoService.PREF_FEEDBACK, true)) return 0;
-    return prefs.getBoolean(AudioEchoService.PREF_SHIFT, false) ? 2 : 1;
+    return prefs.getBoolean(AudioEchoService.PREF_BACKOFF, false) ? 2 : 1;
   }
 
   private void setHowlLevel(int level) {
     prefs.edit()
       .putBoolean(AudioEchoService.PREF_FEEDBACK, level >= 1)
-      .putBoolean(AudioEchoService.PREF_SHIFT,    level == 2)
+      .putBoolean(AudioEchoService.PREF_BACKOFF,  level == 2)
       .apply();
     AudioEchoService.loadSettings(this);
     updateUi();
+  }
+
+  // Up to 2.1 "Strong" meant the 5 Hz shift; it now means level back-off,
+  // and the shift is a separate (experimental) switch.
+  private void migrateSettings() {
+    if (prefs.contains(AudioEchoService.PREF_BACKOFF)) return;
+    boolean wasStrong = prefs.getBoolean(AudioEchoService.PREF_SHIFT, false);
+    prefs.edit()
+      .putBoolean(AudioEchoService.PREF_BACKOFF, wasStrong)
+      .putBoolean(AudioEchoService.PREF_SHIFT, false)
+      .apply();
+  }
+
+  // targetSdk 35 draws behind the status and navigation bars: pad the content
+  private void applySystemBarInsets() {
+    View content = findViewById(R.id.content);
+    final int left = content.getPaddingLeft(), top = content.getPaddingTop();
+    final int right = content.getPaddingRight(), bottom = content.getPaddingBottom();
+    content.setOnApplyWindowInsetsListener((v, insets) -> {
+      int insetTop, insetBottom;
+      if (Build.VERSION.SDK_INT >= 30) {
+        android.graphics.Insets bars = insets.getInsets(WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout());
+        insetTop = bars.top;
+        insetBottom = bars.bottom;
+      }
+      else {
+        insetTop = insets.getSystemWindowInsetTop();
+        insetBottom = insets.getSystemWindowInsetBottom();
+      }
+      v.setPadding(left, top + insetTop, right, bottom + insetBottom);
+      return insets;
+    });
+    content.requestApplyInsets();
+  }
+
+  // Per-app language (Android 13+): the same choice as in the system settings
+  private void setupLanguage() {
+    View row = findViewById(R.id.languageRow);
+    if (Build.VERSION.SDK_INT < 33) {
+      row.setVisibility(View.GONE);
+      return;
+    }
+    LocaleManager localeManager = getSystemService(LocaleManager.class);
+    String[] tags = {"", "es", "en"};
+    LocaleList current = localeManager.getApplicationLocales();
+    int selected = 0;
+    if (!current.isEmpty()) {
+      String language = current.get(0).getLanguage();
+      for (int i = 1; i < tags.length; i++)
+        if (tags[i].equals(language)) selected = i;
+    }
+    setupSegment(R.id.languageSegment, new int[]{R.string.language_system, R.string.language_es, R.string.language_en},
+      selected, index -> localeManager.setApplicationLocales(
+        index == 0 ? LocaleList.getEmptyLocaleList() : LocaleList.forLanguageTags(tags[index])));
   }
 
   // ---------------------------------------------------------------------------
@@ -615,8 +676,13 @@ public class MainActivity extends Activity {
     else if (live) {
       status = getString(R.string.status_live);
       int cuts = AudioEchoService.feedbackCuts;
-      hint   = (cuts > 0) ? getString(R.string.hint_cuts, cuts)
-                          : getString(holdMode ? R.string.hint_hold : R.string.hint_toggle_stop);
+      int backoff = (int) Math.round(-AudioEchoService.backoffDb);
+      if (backoff > 0)
+        hint = getString(R.string.hint_backoff, backoff);
+      else if (cuts > 0)
+        hint = getString(R.string.hint_cuts, cuts);
+      else
+        hint = getString(holdMode ? R.string.hint_hold : R.string.hint_toggle_stop);
       state  = MicButtonView.STATE_LIVE;
     }
     else if (active) {

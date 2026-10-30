@@ -49,7 +49,7 @@
   <string name="source_performance">Live / karaoke (VOICE_PERFORMANCE)</string>
   <string name="source_unprocessed">Unprocessed (UNPROCESSED)</string>
   <string name="source_communication">Call, echo cancelling (VOICE_COMMUNICATION)</string>
-  <string name="advanced_info">Background noise · Light = phone\'s own filter; Strong = RNNoise (+10–20 ms).\nHowl protection · Normal = automatic notches; Strong = also shifts the voice 5 Hz (speech only).</string>
+  <string name="advanced_info">Background noise · Light = phone\'s own filter; Strong = RNNoise (+10–20 ms).\nHowl protection · Normal = automatic notches; Strong = also turns the volume down while howls keep coming.</string>
   <string name="denoise_unavailable">Strong noise reduction does not work on this phone (needs 48 kHz).</string>
   <string name="stop_service">Turn off microphone</string>
 
@@ -62,4 +62,10 @@
   <string name="dac_none">No wired audio output detected.\n\nIf the USB-C adapter is plugged in and nothing shows up, it is most likely a passive adapter (no DAC). This phone needs an adapter with a DAC, or a speaker connected by Bluetooth.</string>
   <string name="dac_unknown_rates">not reported</string>
   <string name="output_wired_dac_subtitle">Low delay · USB DAC</string>
+  <string name="shift">Shift voice 5 Hz (experimental, speech only)</string>
+  <string name="hint_backoff">Volume lowered %d dB to stop howling</string>
+  <string name="language">Language</string>
+  <string name="language_system">System</string>
+  <string name="language_es">Español</string>
+  <string name="language_en">English</string>
 </resources>

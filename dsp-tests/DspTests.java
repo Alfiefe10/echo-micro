@@ -177,6 +177,42 @@ public class DspTests {
     }
   }
 
+  // Closed room: five narrow modes, short path, loop gain well above the howl point
+  static void harshRoomTests() {
+    int n = SR * 10, block = 480, delay = 480;
+    float[] voice = speech(n, 1, false);
+    double source = levelDb(voice, n / 2);
+    double[] modes = {620, 1250, 2300, 3400, 5100};
+    String[] names = {"normal", "fuerte"};
+    double[] limits = {3.0, 0.0};
+    for (int mode = 0; mode < 2; mode++) {
+      Biquad[] room = new Biquad[modes.length];
+      for (int i = 0; i < modes.length; i++) {
+        room[i] = new Biquad();
+        room[i].setPeaking(SR, modes[i], 8, 8);
+      }
+      AudioChain chain = new AudioChain(SR);
+      chain.feedbackEnabled = true;
+      chain.backoffEnabled  = (mode == 1);
+      float[] out = new float[n], work = new float[block];
+      short[] pcm = new short[block];
+      for (int s = 0; s + block <= n; s += block) {
+        for (int i = 0; i < block; i++) {
+          int t = s + i;
+          float fb = (t >= delay) ? out[t - delay] : 0f;
+          for (Biquad b : room) fb = b.process(fb);
+          float mic = voice[t] + 0.7f * fb;
+          pcm[i] = (short) Math.max(-32768, Math.min(32767, mic * 32768));
+        }
+        chain.process(pcm, work, block, 1.0f);
+        for (int i = 0; i < block; i++) out[s + i] = pcm[i] / 32768f;
+      }
+      double level = levelDb(out, n / 2) - source;
+      check(level < limits[mode], String.format("sala cerrada, protección %s: %+.1f dB sobre la voz (%d cortes)",
+        names[mode], level, chain.getFeedbackCuts()));
+    }
+  }
+
   public static void main(String[] args) {
     check(highPassDb(50) < -12, String.format("paso alto: 50 Hz atenuados (%.1f dB)", highPassDb(50)));
     check(Math.abs(highPassDb(1000)) < 0.5, String.format("paso alto: 1 kHz intacto (%.1f dB)", highPassDb(1000)));
@@ -198,6 +234,7 @@ public class DspTests {
     check(peak <= 29200, "cadena: ganancia x3 sin desbordar (pico " + peak + ")");
 
     feedbackTests();
+    harshRoomTests();
     denoiseTests();
     shiftTests();
 

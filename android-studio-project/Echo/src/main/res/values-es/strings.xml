@@ -47,7 +47,7 @@
   <string name="source_performance">Directo / karaoke (VOICE_PERFORMANCE)</string>
   <string name="source_unprocessed">Sin procesar (UNPROCESSED)</string>
   <string name="source_communication">Llamada, con antieco (VOICE_COMMUNICATION)</string>
-  <string name="advanced_info">Ruido de fondo · Suave = filtro del propio móvil; Fuerte = RNNoise (+10–20 ms).\nProtección contra pitidos · Normal = cortes automáticos; Fuerte = además desplaza la voz 5 Hz (solo para hablar).</string>
+  <string name="advanced_info">Ruido de fondo · Suave = filtro del propio móvil; Fuerte = RNNoise (+10–20 ms).\nProtección contra pitidos · Normal = cortes automáticos; Fuerte = además baja el volumen mientras sigan los pitidos.</string>
   <string name="denoise_unavailable">La reducción de ruido fuerte no funciona en este móvil (necesita 48 kHz).</string>
   <string name="stop_service">Apagar el micro</string>
 
@@ -60,4 +60,10 @@
   <string name="dac_none">No se detecta ninguna salida de audio por cable.\n\nSi el adaptador USB-C está enchufado y no aparece nada, casi seguro que es pasivo (sin DAC). Este móvil necesita un adaptador con DAC, o un altavoz por Bluetooth.</string>
   <string name="dac_unknown_rates">no indicadas</string>
   <string name="output_wired_dac_subtitle">Retraso bajo · DAC USB</string>
+  <string name="shift">Desplazar la voz 5 Hz (experimental, solo para hablar)</string>
+  <string name="hint_backoff">Volumen bajado %d dB para frenar el pitido</string>
+  <string name="language">Idioma</string>
+  <string name="language_system">Sistema</string>
+  <string name="language_es">Español</string>
+  <string name="language_en">English</string>
 </resources>

@@ -5,6 +5,7 @@
   android:fillViewport="true">
 
   <LinearLayout
+    android:id="@+id/content"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
@@ -255,6 +256,15 @@
         android:textColor="@color/text_primary"
         android:textSize="15sp" />
 
+      <Switch
+        android:id="@+id/shiftSwitch"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="14dp"
+        android:text="@string/shift"
+        android:textColor="@color/text_primary"
+        android:textSize="15sp" />
+
       <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -268,6 +278,30 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp" />
+
+      <LinearLayout
+        android:id="@+id/languageRow"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="18dp"
+        android:orientation="vertical">
+
+        <TextView
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"
+          android:text="@string/language"
+          android:textColor="@color/text_primary"
+          android:textSize="15sp" />
+
+        <LinearLayout
+          android:id="@+id/languageSegment"
+          android:layout_width="match_parent"
+          android:layout_height="44dp"
+          android:layout_marginTop="8dp"
+          android:background="@drawable/seg_container"
+          android:orientation="horizontal"
+          android:padding="4dp" />
+      </LinearLayout>
 
       <Button
         android:id="@+id/dacButton"
