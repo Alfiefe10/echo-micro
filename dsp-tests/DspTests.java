@@ -108,6 +108,55 @@ public class DspTests {
     }
   }
 
+  static void denoiseTests() {
+    if (!RnNoise.isAvailable()) {
+      System.out.println("--    RNNoise: librería nativa no cargada, pruebas omitidas");
+      return;
+    }
+    int n = SR * 6;
+    float[] voice = speech(n, 3, false);
+    Random r = new Random(4);
+    float[] noisy = new float[n];
+    for (int i = 0; i < n; i++) noisy[i] = voice[i] + (float) (0.02 * r.nextGaussian());
+
+    AudioChain chain = new AudioChain(SR);
+    chain.highPassEnabled = false;
+    chain.limiterEnabled  = false;
+    chain.feedbackEnabled = false;
+    chain.denoiseEnabled  = true;
+    check(chain.isDenoiseUsable(), "RNNoise: disponible a 48 kHz");
+
+    short[] pcm = new short[480];
+    float[] work = new float[480];
+    float[] out = new float[n];
+    for (int s = 0; s + 480 <= n; s += 480) {
+      for (int i = 0; i < 480; i++) pcm[i] = (short) Math.max(-32768, Math.min(32767, noisy[s + i] * 32768));
+      chain.process(pcm, work, 480, 1.0f);
+      for (int i = 0; i < 480; i++) out[s + i] = pcm[i] / 32768f;
+    }
+    chain.release();
+
+    // Noise in the pauses (where the source is silent) and level while speaking
+    // A sample is in a pause when the voice is quiet for 20 ms around it
+    boolean[] pause = new boolean[n];
+    for (int i = 960; i < n - 960; i++) {
+      double max = 0;
+      for (int j = i - 960; j <= i + 960; j += 16) max = Math.max(max, Math.abs(voice[j]));
+      pause[i] = max < 0.01;
+    }
+    double noiseIn = 0, noiseOut = 0, voiceIn = 0, voiceOut = 0;
+    int pauses = 0, talking = 0;
+    for (int i = SR; i < n - 960; i++) {
+      boolean silent = pause[i];
+      if (silent) { noiseIn += noisy[i] * noisy[i]; noiseOut += out[i] * out[i]; pauses++; }
+      else if (Math.abs(voice[i]) > 0.05) { voiceIn += noisy[i] * noisy[i]; voiceOut += out[i + 480] * out[i + 480]; talking++; }
+    }
+    double noiseDrop = 10 * Math.log10(noiseIn / (noiseOut + 1e-12));
+    double voiceDrop = 10 * Math.log10(voiceIn / (voiceOut + 1e-12));
+    check(noiseDrop > 15, String.format("RNNoise: ruido en las pausas -%.1f dB", noiseDrop));
+    check(voiceDrop < 6, String.format("RNNoise: la voz baja solo %.1f dB", voiceDrop));
+  }
+
   public static void main(String[] args) {
     check(highPassDb(50) < -12, String.format("paso alto: 50 Hz atenuados (%.1f dB)", highPassDb(50)));
     check(Math.abs(highPassDb(1000)) < 0.5, String.format("paso alto: 1 kHz intacto (%.1f dB)", highPassDb(1000)));
@@ -129,6 +178,7 @@ public class DspTests {
     check(peak <= 29200, "cadena: ganancia x3 sin desbordar (pico " + peak + ")");
 
     feedbackTests();
+    denoiseTests();
 
     if (failures > 0) {
       System.out.println(failures + " pruebas fallidas");

@@ -27,3 +27,5 @@ out
 # Other
 .DS_Store
 local.properties
+android-studio-project/Echo/src/main/cpp/rnnoise/
+android-studio-project/Echo/.cxx/

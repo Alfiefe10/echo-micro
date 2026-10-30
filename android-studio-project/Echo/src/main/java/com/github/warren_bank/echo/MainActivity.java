@@ -126,6 +126,7 @@ public class MainActivity extends Activity {
     AudioEchoService.loadSettings(this);
     bindSwitch(R.id.guardSwitch,     AudioEchoService.PREF_GUARD_SPEAKER, true,  false);
     bindSwitch(R.id.feedbackSwitch,  AudioEchoService.PREF_FEEDBACK,      true,  false);
+    bindSwitch(R.id.denoiseSwitch,   AudioEchoService.PREF_DENOISE,       false, false);
     bindSwitch(R.id.highPassSwitch,  AudioEchoService.PREF_HIGH_PASS,     true,  false);
     bindSwitch(R.id.limiterSwitch,   AudioEchoService.PREF_LIMITER,       true,  false);
     bindSwitch(R.id.micDirSwitch,    AudioEchoService.PREF_MIC_DIRECTION, true,  true);
@@ -441,7 +442,9 @@ public class MainActivity extends Activity {
     updateOutputLabel();
 
     String status;
-    if (active && AudioEchoService.isBlocked)
+    if (active && AudioEchoService.denoise && !AudioEchoService.denoiseUsable)
+      status = getString(R.string.status_denoise_unavailable);
+    else if (active && AudioEchoService.isBlocked)
       status = getString(R.string.status_blocked);
     else if (AudioEchoService.lastError != null && !active)
       status = getString(R.string.status_error, AudioEchoService.lastError);

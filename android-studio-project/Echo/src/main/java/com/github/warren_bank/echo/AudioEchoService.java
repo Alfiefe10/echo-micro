@@ -46,6 +46,7 @@ public class AudioEchoService extends Service {
   public static final String PREF_MIC_DIRECTION = "MIC_DIRECTION";
   public static final String PREF_SYSTEM_NS     = "SYSTEM_NS";
   public static final String PREF_FEEDBACK      = "FEEDBACK";
+  public static final String PREF_DENOISE       = "DENOISE";
 
   // 10 ms at 48 kHz: small blocks keep the delay down
   private static final int BLOCK_MS = 10;
@@ -64,6 +65,9 @@ public class AudioEchoService extends Service {
   public static volatile boolean limiter      = true;
   public static volatile boolean feedback     = true;
   public static volatile int     feedbackCuts = 0;
+  public static volatile boolean denoise      = false;
+  // False when RNNoise cannot run here (library missing or not 48 kHz)
+  public static volatile boolean denoiseUsable = true;
 
   public static boolean isPhoneSpeaker(AudioDeviceInfo device) {
     if (device == null) return false;
@@ -276,6 +280,7 @@ public class AudioEchoService extends Service {
     highPass     = prefs.getBoolean(PREF_HIGH_PASS, true);
     limiter      = prefs.getBoolean(PREF_LIMITER, true);
     feedback     = prefs.getBoolean(PREF_FEEDBACK, true);
+    denoise      = prefs.getBoolean(PREF_DENOISE, false);
   }
 
   private int getNativeSampleRate() {
@@ -313,6 +318,7 @@ public class AudioEchoService extends Service {
       AudioRecord audioRecord = null;
       AudioTrack  audioTrack  = null;
       NoiseSuppressor noiseSuppressor = null;
+      AudioChain chain = null;
 
       try {
         int minRecordBuf = AudioRecord.getMinBufferSize(sampleRate, CHANNEL_IN, AUDIO_FORMAT);
@@ -358,7 +364,8 @@ public class AudioEchoService extends Service {
           .setPerformanceMode(AudioTrack.PERFORMANCE_MODE_LOW_LATENCY)
           .build();
 
-        AudioChain chain = new AudioChain(sampleRate);
+        chain = new AudioChain(sampleRate);
+        denoiseUsable = chain.isDenoiseUsable();
         short[] buffer = new short[sampleRate * BLOCK_MS / 1000];
         float[] work   = new float[buffer.length];
         audioRecord.startRecording();
@@ -378,6 +385,7 @@ public class AudioEchoService extends Service {
             chain.highPassEnabled = highPass;
             chain.limiterEnabled  = limiter;
             chain.feedbackEnabled = feedback;
+            chain.denoiseEnabled  = denoise;
             float gain = (isMuted || isBlocked) ? 0.0f : audioGain;
             inputLevel = chain.process(buffer, work, readSize, gain);
             feedbackCuts = chain.getFeedbackCuts();
@@ -393,6 +401,7 @@ public class AudioEchoService extends Service {
       }
       finally {
         if (noiseSuppressor != null) noiseSuppressor.release();
+        if (chain != null) chain.release();
         if (audioRecord != null) {
           try { audioRecord.stop(); } catch(Exception ignore) {}
           audioRecord.release();

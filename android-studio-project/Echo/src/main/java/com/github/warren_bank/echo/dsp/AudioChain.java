@@ -8,16 +8,29 @@ public final class AudioChain {
   public volatile boolean highPassEnabled = true;
   public volatile boolean limiterEnabled  = true;
   public volatile boolean feedbackEnabled = true;
+  public volatile boolean denoiseEnabled  = false;
 
   private final Biquad  highPass;
   private final Limiter limiter;
   private final FeedbackSuppressor feedback;
+  private final RnNoise denoise;
+  private final boolean denoiseUsable;
 
   public AudioChain(int sampleRate) {
     highPass = new Biquad();
     highPass.setHighPass(sampleRate, HIGH_PASS_HZ, 0.7071);
     limiter = new Limiter(sampleRate, 0.89f, 150.0);  // -1 dBFS
     feedback = new FeedbackSuppressor(sampleRate);
+    denoiseUsable = (sampleRate == 48000) && RnNoise.isAvailable();
+    denoise = denoiseUsable ? new RnNoise() : null;
+  }
+
+  public boolean isDenoiseUsable() {
+    return denoiseUsable;
+  }
+
+  public void release() {
+    if (denoise != null) denoise.release();
   }
 
   public int getFeedbackCuts() {
@@ -35,6 +48,9 @@ public final class AudioChain {
     }
 
     if (highPassEnabled) highPass.process(work, n);
+
+    // RNNoise needs exact 10 ms frames at 48 kHz; otherwise it is skipped
+    if (denoiseEnabled && denoiseUsable && n == RnNoise.FRAME_SIZE) denoise.process(work);
 
     for (int i = 0; i < n; i++) work[i] *= gain;
 

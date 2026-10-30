@@ -25,11 +25,22 @@ jobs:
           java-version: '17'
           cache: gradle
 
+      - name: RNNoise sources
+        working-directory: .
+        run: python3 scripts/fetch_rnnoise.py
+
       - name: DSP tests
         working-directory: .
         run: |
+          C=android-studio-project/Echo/src/main/cpp
+          S=$C/rnnoise/src
+          gcc -O2 -shared -fPIC -w -I"$JAVA_HOME/include" -I"$JAVA_HOME/include/linux" -I$C/rnnoise/include -I$S \
+            $C/rnnoise_jni.c $S/denoise.c $S/rnn.c $S/pitch.c $S/kiss_fft.c $S/celt_lpc.c $S/nnet.c \
+            $S/nnet_default.c $S/parse_lpcnet_weights.c $S/rnnoise_data.c $S/rnnoise_tables.c -lm \
+            -o "$RUNNER_TEMP/libechornnoise.so"
           javac -d "$RUNNER_TEMP/dsp" android-studio-project/Echo/src/main/java/com/github/warren_bank/echo/dsp/*.java dsp-tests/*.java
-          java -ea -cp "$RUNNER_TEMP/dsp" DspTests
+          java -ea -Djava.library.path="$RUNNER_TEMP" -cp "$RUNNER_TEMP/dsp" DspTests | tee "$RUNNER_TEMP/dsp.log"
+          ! grep -q "^--" "$RUNNER_TEMP/dsp.log"
 
       - name: Version
         id: version

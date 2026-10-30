@@ -42,4 +42,6 @@
   <string name="system_ns">Supresor de ruido del móvil</string>
   <string name="feedback">Supresor de pitido automático</string>
   <string name="status_live_cuts">En directo — %d frecuencias de pitido cortadas</string>
+  <string name="denoise">Reducción de ruido avanzada (RNNoise, +10–20 ms)</string>
+  <string name="status_denoise_unavailable">La reducción de ruido avanzada no funciona en este móvil</string>
 </resources>
