@@ -4,16 +4,19 @@ package com.github.warren_bank.echo.dsp;
 // Samples are floats in [-1, 1]. Flags may change while running.
 public final class AudioChain {
   public static final double HIGH_PASS_HZ = 120.0;
+  public static final double SHIFT_HZ     = 5.0;
 
   public volatile boolean highPassEnabled = true;
   public volatile boolean limiterEnabled  = true;
   public volatile boolean feedbackEnabled = true;
   public volatile boolean denoiseEnabled  = false;
+  public volatile boolean shiftEnabled    = false;
 
   private final Biquad  highPass;
   private final Limiter limiter;
   private final FeedbackSuppressor feedback;
   private final RnNoise denoise;
+  private final FrequencyShifter shifter;
   private final boolean denoiseUsable;
 
   public AudioChain(int sampleRate) {
@@ -21,6 +24,7 @@ public final class AudioChain {
     highPass.setHighPass(sampleRate, HIGH_PASS_HZ, 0.7071);
     limiter = new Limiter(sampleRate, 0.89f, 150.0);  // -1 dBFS
     feedback = new FeedbackSuppressor(sampleRate);
+    shifter  = new FrequencyShifter(sampleRate, SHIFT_HZ);
     denoiseUsable = (sampleRate == 48000) && RnNoise.isAvailable();
     denoise = denoiseUsable ? new RnNoise() : null;
   }
@@ -55,6 +59,8 @@ public final class AudioChain {
     for (int i = 0; i < n; i++) work[i] *= gain;
 
     if (feedbackEnabled) feedback.process(work, n);
+
+    if (shiftEnabled) shifter.process(work, n);
 
     if (limiterEnabled) limiter.process(work, n);
 

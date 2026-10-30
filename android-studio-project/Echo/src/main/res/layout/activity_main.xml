@@ -181,6 +181,15 @@
       android:textSize="16sp" />
 
     <Switch
+      android:id="@+id/shiftSwitch"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:layout_marginTop="12dp"
+      android:text="@string/shift"
+      android:textColor="@color/text_primary"
+      android:textSize="16sp" />
+
+    <Switch
       android:id="@+id/highPassSwitch"
       android:layout_width="match_parent"
       android:layout_height="wrap_content"

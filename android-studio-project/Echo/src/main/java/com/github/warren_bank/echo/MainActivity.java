@@ -127,6 +127,7 @@ public class MainActivity extends Activity {
     bindSwitch(R.id.guardSwitch,     AudioEchoService.PREF_GUARD_SPEAKER, true,  false);
     bindSwitch(R.id.feedbackSwitch,  AudioEchoService.PREF_FEEDBACK,      true,  false);
     bindSwitch(R.id.denoiseSwitch,   AudioEchoService.PREF_DENOISE,       false, false);
+    bindSwitch(R.id.shiftSwitch,     AudioEchoService.PREF_SHIFT,         false, false);
     bindSwitch(R.id.highPassSwitch,  AudioEchoService.PREF_HIGH_PASS,     true,  false);
     bindSwitch(R.id.limiterSwitch,   AudioEchoService.PREF_LIMITER,       true,  false);
     bindSwitch(R.id.micDirSwitch,    AudioEchoService.PREF_MIC_DIRECTION, true,  true);

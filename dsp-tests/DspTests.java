@@ -157,6 +157,26 @@ public class DspTests {
     check(voiceDrop < 6, String.format("RNNoise: la voz baja solo %.1f dB", voiceDrop));
   }
 
+  static void shiftTests() {
+    int n = 1 << 16;
+    for (double f : new double[]{150, 1000, 4000}) {
+      FrequencyShifter shifter = new FrequencyShifter(SR, 5);
+      float[] x = sine(f, 1, 2 * n);
+      shifter.process(x, x.length);
+      double[] re = new double[n], im = new double[n];
+      for (int i = 0; i < n; i++) re[i] = x[n + i] * (0.5 - 0.5 * Math.cos(2 * Math.PI * i / (n - 1)));
+      new Fft(n).transform(re, im);
+      double bin = (double) SR / n, up = 0, down = 0;
+      for (int k = 0; k < n / 2; k++) {
+        double m = Math.hypot(re[k], im[k]);
+        if (Math.abs(k * bin - (f + 5)) < 2) up = Math.max(up, m);
+        if (Math.abs(k * bin - (f - 5)) < 2) down = Math.max(down, m);
+      }
+      double image = 20 * Math.log10(down / up);
+      check(image < -35, String.format("desplazamiento: %.0f Hz -> %.0f Hz, imagen a %.1f dB", f, f + 5, image));
+    }
+  }
+
   public static void main(String[] args) {
     check(highPassDb(50) < -12, String.format("paso alto: 50 Hz atenuados (%.1f dB)", highPassDb(50)));
     check(Math.abs(highPassDb(1000)) < 0.5, String.format("paso alto: 1 kHz intacto (%.1f dB)", highPassDb(1000)));
@@ -179,6 +199,7 @@ public class DspTests {
 
     feedbackTests();
     denoiseTests();
+    shiftTests();
 
     if (failures > 0) {
       System.out.println(failures + " pruebas fallidas");

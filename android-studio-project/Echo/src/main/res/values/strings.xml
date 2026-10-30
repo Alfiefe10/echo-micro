@@ -46,4 +46,5 @@
   <string name="status_live_cuts">Live — %d howl frequencies cut</string>
   <string name="denoise">Advanced noise reduction (RNNoise, +10–20 ms)</string>
   <string name="status_denoise_unavailable">Advanced noise reduction not available on this phone</string>
+  <string name="shift">Extra anti-feedback (shift voice 5 Hz; speech only)</string>
 </resources>

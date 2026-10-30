@@ -44,4 +44,5 @@
   <string name="status_live_cuts">En directo — %d frecuencias de pitido cortadas</string>
   <string name="denoise">Reducción de ruido avanzada (RNNoise, +10–20 ms)</string>
   <string name="status_denoise_unavailable">La reducción de ruido avanzada no funciona en este móvil</string>
+  <string name="shift">Anti-acople extra (desplaza la voz 5 Hz; solo para hablar)</string>
 </resources>
