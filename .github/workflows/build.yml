@@ -92,7 +92,7 @@ jobs:
           APKSIGNER="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)/apksigner"
           APK=$(ls out/*.apk)
           "$APKSIGNER" verify --verbose --print-certs "$APK" | tee "$RUNNER_TEMP/verify.log"
-          GOT=$(grep -m1 'Signer #1 certificate SHA-256 digest:' "$RUNNER_TEMP/verify.log" | awk '{print $NF}')
+          GOT=$(grep -m1 -E 'Signer.*certificate SHA-256 digest:' "$RUNNER_TEMP/verify.log" | awk '{print $NF}')
           if [ "$GOT" != "$RELEASE_CERT_SHA256" ]; then
             echo "::error::Certificado inesperado: ${GOT:-ninguno} (esperado $RELEASE_CERT_SHA256)"
             exit 1
