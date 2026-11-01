@@ -2,13 +2,17 @@ name: Build
 
 on:
   push:
-    branches: [master]
     tags: ['v*']
   pull_request:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
+
+env:
+  # SHA-256 del certificado de firma de las releases (publico, no es secreto).
+  # Sacado de echo-micro-3.1.0.apk (igual en v2.2.0 y v3.0.0).
+  RELEASE_CERT_SHA256: 6d0918ae3024ab373dce2d0a018470a6c5e976130582195889c050c366e97f0c
 
 jobs:
   build:
@@ -60,6 +64,11 @@ jobs:
           if [ -n "$KEYSTORE_B64" ]; then
             echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.p12"
             echo "KEYSTORE_FILE=$RUNNER_TEMP/release.p12" >> "$GITHUB_ENV"
+          elif [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            echo "::error::Falta el secreto KEYSTORE_B64: una release no puede salir sin firmar."
+            exit 1
+          else
+            echo "::notice::Sin KEYSTORE_B64: la APK de este run sale sin firmar."
           fi
 
       - name: Build
@@ -76,14 +85,55 @@ jobs:
             "$GITHUB_WORKSPACE/out/echo-micro-${{ steps.version.outputs.name }}.apk"
           ls -l "$GITHUB_WORKSPACE/out"
 
+      - name: Verify signature
+        if: env.KEYSTORE_FILE != ''
+        working-directory: .
+        run: |
+          APKSIGNER="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)/apksigner"
+          APK=$(ls out/*.apk)
+          "$APKSIGNER" verify --verbose --print-certs "$APK" | tee "$RUNNER_TEMP/verify.log"
+          GOT=$(grep -m1 'Signer #1 certificate SHA-256 digest:' "$RUNNER_TEMP/verify.log" | awk '{print $NF}')
+          if [ "$GOT" != "$RELEASE_CERT_SHA256" ]; then
+            echo "::error::Certificado inesperado: ${GOT:-ninguno} (esperado $RELEASE_CERT_SHA256)"
+            exit 1
+          fi
+          echo "Firma correcta: $GOT"
+
       - uses: actions/upload-artifact@v7
+        if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
         with:
           name: echo-micro-${{ steps.version.outputs.name }}
           path: out/*.apk
+          retention-days: 14
+
+      # Solo para pasar la APK al job de publicacion; la descarga publica es la release.
+      - uses: actions/upload-artifact@v7
+        if: startsWith(github.ref, 'refs/tags/v')
+        with:
+          name: release-apk
+          path: out/*.apk
+          retention-days: 1
+
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: release-apk
+          path: out
 
       - name: Release
-        if: startsWith(github.ref, 'refs/tags/v')
-        working-directory: .
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" out/*.apk --title "Echo Micro $GITHUB_REF_NAME" --generate-notes
+          GH_REPO: ${{ github.repository }}
+        run: |
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            echo "La release $GITHUB_REF_NAME ya existe: se sustituye la APK."
+            gh release upload "$GITHUB_REF_NAME" out/*.apk --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" out/*.apk --title "Echo Micro $GITHUB_REF_NAME" --generate-notes
+          fi
