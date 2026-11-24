@@ -48,6 +48,10 @@ The output keeps at most ~30 ms of audio waiting (`dsp/LatencyKeeper`): with a U
 * 3.0: settings screen, equalizer, noise gate, automatic volume, per-output settings, recording, delay and feedback test
 * 3.1: output delay kept from growing
 
+##### Pending
+
+* 2026-11-24 · echo through AUX: with a wired (AUX) speaker and the phone close to it, some echo can still be heard on 3.1. Before changing anything, measure it with Settings → Measure delay and feedback (delay in ms, coupling in dB) in that setup. Possible next step, depending on those numbers: an adaptive feedback canceller (NLMS), which needs decorrelation (frequency shift or similar) because in a mic-to-speaker loop the reference is the voice itself.
+
 ---
 
 #### [Echo](https://github.com/warren-bank/Android-Pipe-Audio-From-Microphone-To-Speaker)
